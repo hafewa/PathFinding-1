@@ -43,7 +43,7 @@ public class TestWorld : MonoBehaviour
 			{
 				AStarUnit aStarUnit = new AStarUnit();
 
-				if(i != 0 && j != 0 && Random.Range(1, 10) <= 3)
+				if(i != 0 && j != 0 && Random.Range(1, 10) <= 1)
 				{
 					aStarUnit.isPassable = false;
 
