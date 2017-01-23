@@ -322,7 +322,7 @@ public class MapEditor : MonoBehaviour {
                             var newObstacler = CreateObstacler();
                             newObstacler.transform.parent = ObstaclerList == null ? null : ObstaclerList.transform;
                             newObstacler.transform.localScale = new Vector3(UnitWidth, UnitWidth, UnitWidth);
-                            newObstacler.transform.localPosition = Utils.NumToPosition(Plane.transform.position, new Vector2(col, row), UnitWidth, MapWidth, MapHeight);
+                            newObstacler.transform.position = Utils.NumToPosition(Plane.transform.position, new Vector2(col, row), UnitWidth, MapWidth, MapHeight);
                             mapStateDic[key] = newObstacler;
                         }
                             break;
@@ -400,7 +400,7 @@ public class MapEditor : MonoBehaviour {
         {
 
             var strResult = new StringBuilder();
-            for (var row = map.Length - 1; row > 0; row--)
+            for (var row = 0; row < map.Length; row++)
             {
                 var oneRow = map[row];
                 for (var col = 0; col < oneRow.Length; col++)
@@ -408,7 +408,7 @@ public class MapEditor : MonoBehaviour {
                     var cell = oneRow[col];
                     strResult.Append(cell + ((col == oneRow.Length - 1) ? "" : ","));
                 }
-                strResult.Append((row == 1) ? "" : "\n");
+                strResult.Append((row == map.Length - 1) ? "" : "\n");
             }
             Debug.Log(strResult);
             // TODO 生成文件 不是该类的功能

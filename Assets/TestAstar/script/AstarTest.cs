@@ -9,7 +9,7 @@ using Random = System.Random;
 
 public class AstarTest : MonoBehaviour {
 
-    private IList<GameObject> pathPoint = new List<GameObject>();
+    private IList<GameObject> pathPointList = new List<GameObject>();
     private GameObject main;
 
     /// <summary>
@@ -33,6 +33,11 @@ public class AstarTest : MonoBehaviour {
     public int MapHeight = 50;
 
     /// <summary>
+    /// 单位宽度
+    /// </summary>
+    public int UnitWidth = 1;
+
+    /// <summary>
     /// 其实x
     /// </summary>
     public int StartX = 0;
@@ -51,6 +56,11 @@ public class AstarTest : MonoBehaviour {
     /// 目标Y
     /// </summary>
     public int TargetY = 0;
+
+    /// <summary>
+    /// 是否提供跳点路径
+    /// </summary>
+    public bool IsJumpPoint = false;
 
     /// <summary>
     /// 地图加载
@@ -100,7 +110,7 @@ public class AstarTest : MonoBehaviour {
                 TargetY = MapHeight - 1;
             }
 
-            var path = SearchRoad(mapInfoData, 0, 0, TargetX, TargetY, Diameter);
+            var path = SearchRoad(mapInfoData, 0, 0, TargetX, TargetY, Diameter, IsJumpPoint);
             Debug.Log("Time1:" + (Time.realtimeSinceStartup - now));
             init(mapInfoData);
             StartCoroutine(Step(path));
@@ -170,10 +180,10 @@ public class AstarTest : MonoBehaviour {
     IEnumerator Step(IList<Node> path)
     {
         // 删除所有
-        pathPoint.All((item) => { Destroy(item);
+        pathPointList.All((item) => { Destroy(item);
                                      return item;
         });
-        pathPoint.Clear();
+        pathPointList.Clear();
         var pathArray = path.ToArray();
         Array.Reverse(pathArray);
         foreach (var node in pathArray)
@@ -183,8 +193,9 @@ public class AstarTest : MonoBehaviour {
                 for (var y = 0; y < Diameter; y++)
                 {
                     var newSphere = Instantiate(PathPoint);
-                    newSphere.transform.position = Utils.NumToPosition(LoadMap.transform.position, new Vector2(node.X, node.Y), 1, MapWidth, MapHeight);
-                    pathPoint.Add(newSphere);
+                    newSphere.transform.position = Utils.NumToPosition(LoadMap.transform.position, new Vector2(node.X, node.Y), UnitWidth, MapWidth, MapHeight)
+                        + new Vector3(x * UnitWidth, 0, y * UnitWidth);
+                    pathPointList.Add(newSphere);
                 }
             }
             yield return new WaitForEndOfFrame();
@@ -347,11 +358,11 @@ public class AstarTest : MonoBehaviour {
             openList = new Queue<Node>(tmpList);
 
             // 如果搜索次数大于(w+h) * 4 则停止搜索
-            if (counter > (map.Length + map[0].Length) * 4)
-            {
-                openList.Clear();
-                break;
-            }
+            //if (counter > (map.Length + map[0].Length) * 4)
+            //{
+            //    openList.Clear();
+            //    break;
+            //}
 
         } while ((endNode = ExistInList(new Node(endX, endY), openList.ToArray())) == null);
 
@@ -368,6 +379,39 @@ public class AstarTest : MonoBehaviour {
                 currentNode = currentNode.Parent;
             } while (currentNode.X != startX || currentNode.Y != startY);
         }
+
+        // 处理跳点路径
+        if (isJumpPoint && path.Count > 0)
+        {
+            // 如果路径方向发生变化则变化的奇点为拐点放入列表
+            var jumpPointPath = new List<Node>();
+            var startPoint = path[0];
+            jumpPointPath.Add(startPoint);
+            var xOff = startPoint.X;
+            var yOff = startPoint.Y;
+            foreach (var pathPoint in path)
+            {
+                // 不是第一个元素
+                if (pathPoint.Parent == null)
+                {
+                    continue;
+                }
+
+                // x,y差值是否与上一次相同, 不相同则保存拐点
+                var nowXOff = pathPoint.X - pathPoint.Parent.X;
+                var nowYOff = pathPoint.Y - pathPoint.Parent.Y;
+                if (nowXOff != xOff || nowYOff != yOff)
+                {
+                    xOff = nowXOff;
+                    yOff = nowYOff;
+                    jumpPointPath.Add(pathPoint);
+                }
+            }
+            path.Clear();
+            path = jumpPointPath;
+            Debug.Log(jumpPointPath.Count);
+        }
+
         if (completeCallback != null)
         {
             completeCallback();
