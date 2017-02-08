@@ -82,7 +82,11 @@
      <Compile Include="Assets\Script\DragonController.cs" />
      <Compile Include="Assets\Script\GameController.cs" />
      <Compile Include="Assets\Script\Maze.cs" />
+     <Compile Include="Assets\TestAstar\script\AStartPathFinding.cs" />
      <Compile Include="Assets\TestAstar\script\AstarTest.cs" />
+     <Compile Include="Assets\TestAstar\script\BinaryHeap.cs" />
+     <Compile Include="Assets\TestAstar\script\BinaryHeap1.cs" />
+     <Compile Include="Assets\TestAstar\script\BinaryTree.cs" />
      <Compile Include="Assets\TestAstar\script\LoadMap.cs" />
      <Compile Include="Assets\TestAstar\script\MapEditor.cs" />
      <Compile Include="Assets\TestAstar\script\Utils.cs" />
