@@ -96,7 +96,7 @@ public class AStarPathFinding
                     if (ExistInList(surroundPoint, openList.GetEnumerator()) == null)
                     {
                         // 计算H值, 通过水平和垂直距离确定
-                        surroundPoint.H = (int)(Math.Sqrt(Math.Pow(endX - surroundPoint.X, 2) + Math.Pow(endY - surroundPoint.Y, 2)));//Math.Abs(endX - surroundPoint.X)*10 + Math.Abs(endY - surroundPoint.Y)*10;//
+                        surroundPoint.H = Math.Abs(endX - surroundPoint.X)*10 + Math.Abs(endY - surroundPoint.Y)*10;//(int)(Math.Sqrt(Math.Pow(endX - surroundPoint.X, 2) + Math.Pow(endY - surroundPoint.Y, 2)));//
                         surroundPoint.G = g;
                         surroundPoint.F = surroundPoint.H + surroundPoint.G;
                         surroundPoint.Parent = currentPoint;

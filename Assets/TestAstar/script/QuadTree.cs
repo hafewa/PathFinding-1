@@ -221,18 +221,8 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
 /// <summary>
 /// 矩形类
 /// </summary>
-public class Rectangle
+public class Rectangle : GraphicalItem<Rectangle>
 {
-
-    /// <summary>
-    /// 当前Rect位置X(左下角)
-    /// </summary>
-    public float X { get; set; }
-
-    /// <summary>
-    /// 当前Rect位置Y(左下角)
-    /// </summary>
-    public float Y { get; set; }
 
     /// <summary>
     /// 宽度
@@ -258,9 +248,9 @@ public class Rectangle
     /// </summary>
     /// <param name="target">目标</param>
     /// <returns>是否碰撞</returns>
-    public bool IsCollision(Rectangle target)
+    public override bool IsCollision(Rectangle target)
     {
-        if (target == null|| X + Width < target.X || target.X + target.Width < X || Y + Height < target.Y || target.Y + target.Height < Y)
+        if (target == null || X + Width < target.X || target.X + target.Width < X || Y + Height < target.Y || target.Y + target.Height < Y)
         {
             return false;
         }
@@ -273,7 +263,33 @@ public class Rectangle
 /// 提供图形反馈
 /// </summary>
 /// <typeparam name="T">图形类型</typeparam>
-public interface IGraphical<T>
+public interface IGraphical<T> where T : GraphicalItem<T>
 {
     T GetGraphical();
+}
+
+
+/// <summary>
+/// 图形抽象类
+/// </summary>
+/// <typeparam name="T">目标类型也是图形抽象类</typeparam>
+public abstract class GraphicalItem<T> where T : GraphicalItem<T>
+{
+
+    /// <summary>
+    /// 位置X
+    /// </summary>
+    public float X { get; set; }
+
+    /// <summary>
+    /// 位置Y
+    /// </summary>
+    public float Y { get; set; }
+
+    /// <summary>
+    /// 检测碰撞
+    /// </summary>
+    /// <param name="target">目标对象</param>
+    /// <returns>是否碰撞</returns>
+    public abstract bool IsCollision(T target);
 }

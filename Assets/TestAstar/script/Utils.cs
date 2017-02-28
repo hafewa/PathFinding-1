@@ -83,9 +83,9 @@ public class Utils
     public static Vector3 NumToPosition(Vector3 planePosOffset, Vector2 num, float unitWidth, float mapWidth, float mapHight)
     {
         var result = new Vector3(
-            planePosOffset.x - mapWidth / 2 + unitWidth / 2f + num.x * unitWidth,
+            planePosOffset.x - mapWidth * unitWidth / 2 + unitWidth / 2f + num.x * unitWidth,
             planePosOffset.y + unitWidth,
-            planePosOffset.z - mapHight / 2 + unitWidth / 2f + num.y * unitWidth);
+            planePosOffset.z - mapHight * unitWidth / 2 + unitWidth / 2f + num.y * unitWidth);
 
         return result;
     }

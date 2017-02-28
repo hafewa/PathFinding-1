@@ -35,6 +35,11 @@ public class LoadMap : MonoBehaviour
     public int UnitWidth = 1;
 
     /// <summary>
+    /// 是否显示
+    /// </summary>
+    public bool IsShow;
+
+    /// <summary>
     /// 网格线颜色
     /// </summary>
     public Color LineColor = Color.red;
@@ -86,6 +91,8 @@ public class LoadMap : MonoBehaviour
     private Vector3 rightdown = Vector3.zero;
 
 
+    private List<GameObject> ObstaclerArray = new List<GameObject>();
+
     void Start () {
     }
 	
@@ -118,8 +125,8 @@ public class LoadMap : MonoBehaviour
         mapWidth = mapData[0].Length;
 
         // 初始化优化数据
-        halfMapWidth = mapWidth / 2.0f;
-        halfMapHight = mapHeight / 2.0f;
+        halfMapWidth = mapWidth / 2.0f * UnitWidth;
+        halfMapHight = mapHeight / 2.0f * UnitWidth;
 
         // 获得起始点
         Vector3 startPosition = MapPlane.transform.position;
@@ -144,11 +151,20 @@ public class LoadMap : MonoBehaviour
             Debug.LogError("参数错误!");
             return;
         }
+        // 清除障碍物
+        CleanObstaclerList();
+
+        // 缩放地图
+        MapPlane.transform.localScale = new Vector3(mapWidth * UnitWidth, 1, mapHeight * UnitWidth);
+
+        // 不显示逻辑地图障碍物则返回
+        if (!IsShow)
+        {
+            return;
+        }
 
         // 验证障碍物, 如果为空则修改为cube
-        Obstacler = Obstacler ?? GameObject.CreatePrimitive(PrimitiveType.Cube);
         // 按照map数据构建地图大小
-        MapPlane.transform.localScale = new Vector3(mapWidth, 1, mapHeight);
 
         // 创建格子
         for (var row = 0; row < mapData.Length; row++)
@@ -200,6 +216,11 @@ public class LoadMap : MonoBehaviour
     /// </summary>
     private void DrawLine()
     {
+        // 不显示逻辑地图则返回
+        if (!IsShow)
+        {
+            return;
+        }
         // 在底板上画出格子
         // 画四边
         Debug.DrawLine(leftup, rightup, LineColor);
@@ -208,8 +229,8 @@ public class LoadMap : MonoBehaviour
         Debug.DrawLine(rightdown, leftdown, LineColor);
 
         // 获得格数
-        var xCount = mapWidth / UnitWidth;
-        var yCount = mapHeight / UnitWidth;
+        var xCount = mapWidth;
+        var yCount = mapHeight;
 
         for (var i = 1; i <= xCount; i++)
         {
@@ -237,8 +258,24 @@ public class LoadMap : MonoBehaviour
             Obstacler.transform.localPosition = leftup;
         }
         var result = Instantiate(Obstacler);
+        ObstaclerArray.Add(result);
 
         return result;
+    }
+
+    /// <summary>
+    /// 清空障碍物
+    /// </summary>
+    private void CleanObstaclerList()
+    {
+        if (ObstaclerArray != null && ObstaclerArray.Count > 0)
+        {
+            foreach (var ob in ObstaclerArray)
+            {
+                Destroy(ob);
+            }
+            ObstaclerArray.Clear();
+        }
     }
 
     /// <summary>

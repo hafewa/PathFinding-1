@@ -64,11 +64,27 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     }
 
 
-    //public float speed;
+    public bool CouldObstruct
+    {
+        get { return couldObstruct; }
+        set { couldObstruct = value; }
+    }
 
-    //public float rotateSpeed;
 
-    //public float angle;
+    public Vector3 TargetPos
+    {
+        get { return targetPos; }
+        set
+        {
+            // TODO 切换当前状态
+            targetPos = value;
+        }
+    }
+
+
+    public float ShowSpeed;
+
+    public float ShowAngle;
 
     /// <summary>
     /// 组队ID, 只读
@@ -86,10 +102,10 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
                     group.MemberList.Remove(this);
                 }
 
-                var newGroup = SchoolManager.GetGroupById(groupId);
+                var newGroup = SchoolManager.GetGroupById(value);
                 if (newGroup == null)
                 {
-                    newGroup = new SchoolGroup(groupId);
+                    newGroup = new SchoolGroup(value);
                     SchoolManager.GroupList.Add(newGroup);
                     group = newGroup;
                 }
@@ -188,8 +204,10 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
 
 
 
-
-
+    /// <summary>
+    /// 当前单位的目标点
+    /// </summary>
+    private Vector3 targetPos;
 
     /// <summary>
     /// 组编号
@@ -204,34 +222,41 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// <summary>
     /// 与其他单位间距
     /// </summary>
-    public float distance = 1f;
+    private float distance = 1f;
 
     /// <summary>
     /// 与其他单位组队最大距离
     /// 超过该距离则不与该单位组队
     /// </summary>
-    public float maxDistance = 10;
+    private float maxDistance = 10;
 
     /// <summary>
     /// 移动速度
     /// </summary>
-    public float speed = 10;
+    private float speed = 10;
 
     /// <summary>
     /// 旋转速度
     /// </summary>
-    public float rotateSpeed = 1;
+    private float rotateSpeed = 1;
 
     /// <summary>
     /// 转向权重
     /// 值越大, 转向越快
     /// </summary>
-    public float rotateWeight = 1;
+    private float rotateWeight = 1;
 
     /// <summary>
     /// 单元直径
     /// </summary>
-    public int diameter = 1;
+    private int diameter = 1;
+
+    /// <summary>
+    /// 是否可被阻挡
+    /// 如果为true则遇到其他单位则将其挤开
+    /// 如果为false则减速等待
+    /// </summary>
+    private bool couldObstruct = true;
 
 
     public SchoolBehaviour(int groupId)
@@ -252,6 +277,15 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     }
 }
 
+
+
+
+
+
+
+
+
+
 /// <summary>
 /// 集群编队
 /// </summary>
@@ -268,16 +302,24 @@ public class SchoolGroup
     /// 目标位置
     /// 设置目标的同时 所有成员状态会重置为未开始
     /// </summary>
-    public Vector3 Target {
-        get { return targetPos; }
+    public Vector3 Target
+    {
+        get {
+            if (MemberList != null || MemberList.Count > 0)
+            {
+                return MemberList[0].TargetPos;
+            }
+            return Vector3.zero;
+        }
         set
         {
             // 一旦变更, 虽有所属成员状态全部变成Unstart
             foreach (var member in MemberList)
             {
                 member.State = SchoolItemState.Unstart;
+                member.TargetPos = value;
             }
-            targetPos = value;
+            //targetPos = value;
             startPos = GroupPos;
         }
     }
@@ -348,7 +390,7 @@ public class SchoolGroup
     /// <summary>
     /// 目标位置
     /// </summary>
-    private Vector3 targetPos;
+    //private Vector3 targetPos;
 
     /// <summary>
     /// 路径起始点
