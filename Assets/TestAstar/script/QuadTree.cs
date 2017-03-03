@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
+using MonoEX;
 
 /// <summary>
 /// 四叉树
@@ -12,6 +13,7 @@ using JetBrains.Annotations;
 /// <typeparam name="T">数据类型</typeparam>
 public class QuadTree<T> where T : IGraphical<Rectangle>
 {
+    
 
     /// <summary>
     /// 当前节点最大单元数量
@@ -79,25 +81,24 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     /// </summary>
     /// <param name="item">对象</param>
     /// <returns>节点编号</returns>
-    public int GetIndex(T item)
+    public int GetIndex(Rectangle item)
     {
         var result = -1;
         // 获得当前节点rect的中心点
         var midPointX = this.rect.X + this.rect.Width/2;
         var midPointY = this.rect.Y + this.rect.Height/2;
-
-        var pRect = item.GetGraphical();
+        
         // TODO 判断当前分割大小是否比目标大, 否则无意义
         // 0点在左下角
-        var topContians = (pRect.Y > midPointY); 
-        var bottomContians = (pRect.Y < midPointY - pRect.Height);
+        var topContians = (item.Y > midPointY); 
+        var bottomContians = (item.Y < midPointY - item.Height);
 
-        if (pRect.X < midPointX - pRect.Width)
+        if (item.X < midPointX - item.Width)
         {
             if (topContians)
             {
                 // 左上角
-                result = 0;
+                result = 3;
             }
             else if (bottomContians)
             {
@@ -105,23 +106,28 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
                 result = 2;
             }
         }
-        else if(pRect.X > midPointX)
+        else if (item.X > midPointX)
         {
             if (topContians)
             {
                 // 右上角
-                result = 1;
+                result = 0;
             }
             else if (bottomContians)
             {
                 // 右下角
-                result = 3;
+                result = 1;
             }
+        }
+        else
+        {
+            // TODO
+            int i = 0;
         }
 
         return result;
     }
-
+    
     /// <summary>
     /// 插入对象
     /// </summary>
@@ -131,33 +137,27 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
         // 有子节点
         if (nodes[0] != null)
         {
-            // 判断插入哪个节点
-            var index = GetIndex(item);
-
-            // 子节点是否可以插入
-            if (index != -1)
+            if (InsertToSubNode(item, nodes))
             {
-                nodes[index].Insert(item);
                 return;
             }
         }
-
-        // 不能插入子节点当前节点插入
+        
         itemsList.Add(item);
-
-
         // 判断是否item数量大于maxCount, 并且level小于maxLevel
         if (itemsList.Count > maxItemCount && level < maxLevel)
         {
             // 大于则创建子节点
-            Split();
+            if (nodes[0] == null)
+            {
+                Split();
+            }
             // 将节点挨个加入子节点, 不能放入子节点的继续保留
             for (var i = 0; i < itemsList.Count; i++)
             {
-                var index = GetIndex(itemsList[i]);
-                if (index != -1)
+                var tmpItem = itemsList[i];
+                if (InsertToSubNode(tmpItem, nodes))
                 {
-                    nodes[index].Insert(itemsList[i]);
                     // 从当前列表中删除该节点
                     itemsList.RemoveAt(i);
                     i--;
@@ -181,23 +181,95 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     /// <summary>
     /// 返回传入对象可能会有碰撞的对向列表
     /// </summary>
-    /// <param name="item">碰撞对象</param>
+    /// <param name="rect">碰撞对象</param>
     /// <returns>可能碰撞的列表, 对量性质: 在传入rect所在的最底层自己点的对量+其上各个父级的边缘节点</returns>
-    public List<T> Retrieve(T item)
+    public IList<T> Retrieve(Rectangle rectangle)
     {
         var result = new List<T>();
 
-        // 获得该列表所在子节点
-        var index = GetIndex(item);
+        var index = GetIndex(rectangle);
         // 如果未在子节点则从当前节点返回所有对象
         if (index != -1 && nodes[0] != null)
         {
-            result.AddRange(nodes[index].Retrieve(item));
+            result.AddRange(nodes[index].Retrieve(rectangle));
         }
 
         result.AddRange(itemsList);
+
         return result;
     }
+
+
+    /// <summary>
+    /// 按照矩形返回获取范围内对向列表
+    /// </summary>
+    /// <param name="scopeRect">范围rect</param>
+    /// <returns></returns>
+    public IList<T> GetScope(Rectangle scopeRect)
+    {
+        List<T> result = null;
+        // 判断与当前四叉树的相交
+        if (scopeRect != null && rect.IsCollision(scopeRect))
+        {
+            result = new List<T>();
+            T tmpItem;
+            // 遍历当前节点中的对象列表, 是否有相交
+            for (var i = 0; i < itemsList.Count; i++)
+            {
+                tmpItem = itemsList[i];
+                if (tmpItem.GetGraphical().IsCollision(scopeRect))
+                {
+                    result.Add(tmpItem);
+                }
+            }
+            if (nodes[0] != null)
+            {
+                for (int i = 0; i < nodes.Length; i++)
+                {
+                    if (nodes[i].rect.IsCollision(scopeRect))
+                    {
+                        result.AddRange(nodes[i].GetScope(scopeRect));
+                    }
+                }
+            }
+            // 划定范围, 获取范围内子对象中符合范围的对象
+            // 判断是否与该区域相交 相交则取该区域内对象判断, 并获取其子节点判断是否相交
+            // 获取子列表中的对象
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 获取当前四叉树的矩形区域
+    /// </summary>
+    /// <returns></returns>
+    public Rectangle GetRectangle()
+    {
+        return rect;
+    }
+
+
+    /// <summary>
+    /// 获得子树列表
+    /// </summary>
+    /// <returns></returns>
+    public QuadTree<T>[] GetSubNodes()
+    {
+        return nodes;
+    }
+
+    /// <summary>
+    /// 获取当前树中的单元列表
+    /// </summary>
+    /// <returns></returns>
+    public IList<T> GetItemList()
+    {
+        return itemsList;
+    }
+
+
+    // --------------------------------私有方法---------------------------------
 
 
     /// <summary>
@@ -211,10 +283,32 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
         var subQuadTreeHeight = rect.Height / 2;
 
         // 创建四个子节点
-        nodes[0] = new QuadTree<T>(level + 1, new Rectangle(rect.X, rect.Y, subQuadTreeWidth, subQuadTreeHeight));
+        nodes[2] = new QuadTree<T>(level + 1, new Rectangle(rect.X, rect.Y, subQuadTreeWidth, subQuadTreeHeight));
         nodes[1] = new QuadTree<T>(level + 1, new Rectangle(rect.X + subQuadTreeWidth, rect.Y, subQuadTreeWidth, subQuadTreeHeight));
-        nodes[2] = new QuadTree<T>(level + 1, new Rectangle(rect.X, rect.Y + subQuadTreeHeight, subQuadTreeWidth, subQuadTreeHeight));
-        nodes[3] = new QuadTree<T>(level + 1, new Rectangle(rect.X + subQuadTreeWidth, rect.Y + subQuadTreeHeight, subQuadTreeWidth, subQuadTreeHeight));
+        nodes[3] = new QuadTree<T>(level + 1, new Rectangle(rect.X, rect.Y + subQuadTreeHeight, subQuadTreeWidth, subQuadTreeHeight));
+        nodes[0] = new QuadTree<T>(level + 1, new Rectangle(rect.X + subQuadTreeWidth, rect.Y + subQuadTreeHeight, subQuadTreeWidth, subQuadTreeHeight));
+    }
+
+
+    /// <summary>
+    /// 将对象插入子节点
+    /// </summary>
+    /// <param name="item"></param>
+    /// <param name="nodes"></param>
+    private bool InsertToSubNode(T item, QuadTree<T>[] nodes)
+    {
+        var result = false;
+        var index = GetIndex(item.GetGraphical());
+        if (index != -1)
+        {
+            nodes[index].Insert(item);
+            result = true;
+        }
+        else
+        {
+            // TODO
+        }
+        return result;
     }
 }
 
@@ -256,6 +350,8 @@ public class Rectangle : GraphicalItem<Rectangle>
         }
         return true;
     }
+
+    
 }
 
 /// <summary>
