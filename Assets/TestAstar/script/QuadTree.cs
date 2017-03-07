@@ -47,32 +47,29 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     private QuadTree<T>[] nodes;
 
     /// <summary>
+    /// 节点缓存
+    /// </summary>
+    private Queue<QuadTree<T>> nodeCache = null;
+
+    /// <summary>
+    /// 矩形缓存
+    /// </summary>
+    private Queue<Rectangle> rectCache = null; 
+
+    /// <summary>
     /// 初始化四叉树
     /// </summary>
     /// <param name="level">当前四叉树所在位置</param>
     /// <param name="rect">当前四叉树的位置与宽度大小</param>
-    public QuadTree(int level, Rectangle rect)
+    /// <param name="parentQueue">父级引用cache</param>
+    public QuadTree(int level, Rectangle rect, Queue<QuadTree<T>> parentNodeCache = null, Queue<Rectangle> parentRectCache = null)
     {
         this.level = level;
         itemsList = new List<T>();
         this.rect = rect;
         nodes = new QuadTree<T>[4];
-    }
-
-    /// <summary>
-    /// 清除四叉树
-    /// </summary>
-    public void Clear()
-    {
-        itemsList.Clear();
-
-        for (var i = 0; i < nodes.Length; i++)
-        {
-            var quadTree = nodes[i];
-            if (quadTree == null) { continue;}
-            quadTree.Clear();
-            nodes[i] = null;
-        }
+        nodeCache = parentNodeCache ?? new Queue<QuadTree<T>>();
+        rectCache = parentRectCache ?? new Queue<Rectangle>();
     }
 
 
@@ -88,7 +85,6 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
         var midPointX = this.rect.X + this.rect.Width/2;
         var midPointY = this.rect.Y + this.rect.Height/2;
         
-        // TODO 判断当前分割大小是否比目标大, 否则无意义
         // 0点在左下角
         var topContians = (item.Y > midPointY); 
         var bottomContians = (item.Y < midPointY - item.Height);
@@ -202,6 +198,7 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
 
     /// <summary>
     /// 按照矩形返回获取范围内对向列表
+    /// TODO 优化
     /// </summary>
     /// <param name="scopeRect">范围rect</param>
     /// <returns></returns>
@@ -268,6 +265,29 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
         return itemsList;
     }
 
+    
+    /// <summary>
+    /// 清除四叉树
+    /// 已创建对象不会消除(减少GC消耗), clear后会放入对象池中当在读创建时取出重用
+    /// </summary>
+    public void Clear()
+    {
+        // 清空列表
+        itemsList.Clear();
+        // 清空范围
+        // rect = null;
+
+        for (var i = 0; i < nodes.Length; i++)
+        {
+            var quadTree = nodes[i];
+            if (quadTree == null) { continue; }
+            quadTree.Clear();
+            nodes[i] = null;
+            // 将列表放入缓存
+            nodeCache.Enqueue(quadTree);
+            rectCache.Enqueue(quadTree.rect);
+        }
+    }
 
     // --------------------------------私有方法---------------------------------
 
@@ -278,15 +298,25 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     /// </summary>
     private void Split()
     {
-        // 获得当前四叉树的一半宽度高度
-        var subQuadTreeWidth = rect.Width / 2;
-        var subQuadTreeHeight = rect.Height / 2;
+        QuadTree<T> node = null;
+        Rectangle subRect = null;
+        int subLevel = level + 1;
+        for (var i = 0; i < 4; i++)
+        {
+            subRect = GetSplitRectangle(rect, i);
+            if (nodeCache.Count != 0)
+            {
+                node = nodeCache.Dequeue();
+                node.level = subLevel;
+                node.rect = subRect;
+            }
+            else
+            {
+                node = new QuadTree<T>(subLevel, subRect, nodeCache);
+            }
 
-        // 创建四个子节点
-        nodes[2] = new QuadTree<T>(level + 1, new Rectangle(rect.X, rect.Y, subQuadTreeWidth, subQuadTreeHeight));
-        nodes[1] = new QuadTree<T>(level + 1, new Rectangle(rect.X + subQuadTreeWidth, rect.Y, subQuadTreeWidth, subQuadTreeHeight));
-        nodes[3] = new QuadTree<T>(level + 1, new Rectangle(rect.X, rect.Y + subQuadTreeHeight, subQuadTreeWidth, subQuadTreeHeight));
-        nodes[0] = new QuadTree<T>(level + 1, new Rectangle(rect.X + subQuadTreeWidth, rect.Y + subQuadTreeHeight, subQuadTreeWidth, subQuadTreeHeight));
+            nodes[i] = node;
+        }
     }
 
 
@@ -294,20 +324,68 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     /// 将对象插入子节点
     /// </summary>
     /// <param name="item"></param>
-    /// <param name="nodes"></param>
-    private bool InsertToSubNode(T item, QuadTree<T>[] nodes)
+    /// <param name="subNodes"></param>
+    private bool InsertToSubNode(T item, QuadTree<T>[] subNodes)
     {
         var result = false;
         var index = GetIndex(item.GetGraphical());
         if (index != -1)
         {
-            nodes[index].Insert(item);
+            subNodes[index].Insert(item);
             result = true;
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// 获得子节点
+    /// </summary>
+    /// <param name="parentRect">父节点矩形范围</param>
+    /// <param name="subRectNum">子节点ID</param>
+    /// <param name="rectCacheQueue">矩形对象缓存队列</param>
+    /// <returns>子节点矩形范围</returns>
+    private static Rectangle GetSplitRectangle(Rectangle parentRect, int subRectNum,
+        Queue<Rectangle> rectCacheQueue = null)
+    {
+        // 获得当前四叉树的一半宽度高度
+        var subQuadTreeWidth = parentRect.Width/2;
+        var subQuadTreeHeight = parentRect.Height/2;
+        var subX = 0f;
+        var subY = 0f;
+        Rectangle result = null;
+        if (rectCacheQueue != null && rectCacheQueue.Count > 0)
+        {
+            result = rectCacheQueue.Dequeue();
         }
         else
         {
-            // TODO
+            result = new Rectangle();
         }
+        switch (subRectNum)
+        {
+            case 0:
+                subX = parentRect.X + subQuadTreeWidth;
+                subY = parentRect.Y + subQuadTreeHeight;
+                break;
+            case 1:
+                subX = parentRect.X + subQuadTreeWidth;
+                subY = parentRect.Y;
+                break;
+            case 2:
+                subX = parentRect.X;
+                subY = parentRect.Y;
+                break;
+            case 3:
+                subX = parentRect.X;
+                subY = parentRect.Y + subQuadTreeHeight;
+                break;
+        }
+
+        result.X = subX;
+        result.Y = subY;
+        result.Width = subQuadTreeWidth;
+        result.Height = subQuadTreeHeight;
+
         return result;
     }
 }
@@ -328,6 +406,10 @@ public class Rectangle : GraphicalItem<Rectangle>
     /// </summary>
     public float Height { get; set; }
 
+    public Rectangle()
+    {
+        
+    }
 
     public Rectangle(float x, float y, float w, float h)
     {
@@ -339,6 +421,7 @@ public class Rectangle : GraphicalItem<Rectangle>
 
     /// <summary>
     /// 检测碰撞
+    /// TODO 优化
     /// </summary>
     /// <param name="target">目标</param>
     /// <returns>是否碰撞</returns>

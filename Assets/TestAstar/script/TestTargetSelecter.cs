@@ -2,6 +2,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 
@@ -148,18 +149,105 @@ public class TestTargetSelecter : MonoBehaviour {
     private void ScanTarget()
     {
         // 遍历对象,
-        var item = _leader;
-        // 根据对象的搜寻外径获取对向列表
-        var itemRect = new Rectangle(item.X - item.ScanDiameter / 2f, item.Y - item.ScanDiameter / 2f, item.ScanDiameter,
-            item.ScanDiameter);
-        var inScopeList = MemberList.QuadTree.GetScope(itemRect);
-        DrawRect(itemRect, Color.gray);
-        // 连线
-        foreach (var targetItem in inScopeList)
+        foreach (var item in MemberList.List)
         {
-            Debug.DrawLine(new Vector3(item.X, 0, item.Y), new Vector3(targetItem.X, 0, targetItem.Y));
+
+            //var item = _leader;
+            // 根据对象的搜寻外径获取对向列表
+            var itemRect = new Rectangle(item.X - item.ScanDiameter/2f, item.Y - item.ScanDiameter/2f, item.ScanDiameter,
+                item.ScanDiameter);
+            DrawRect(itemRect, Color.red);
+
+            // 根据策略筛选目标
+            var targetList = TargetFilter(item, MemberList.QuadTree);
+
+            // 连线
+            foreach (var targetItem in targetList)
+            {
+                Debug.DrawLine(new Vector3(item.X, 0, item.Y), new Vector3(targetItem.X, 0, targetItem.Y));
+            }
         }
-       
+    }
+
+    /// <summary>
+    /// 筛选对象
+    /// TODO 优化
+    /// </summary>
+    /// <typeparam name="T">对象类型. 必须继承</typeparam>
+    /// <param name="searchObj">搜索对象</param>
+    /// <param name="quadTree">四叉树</param>
+    /// <returns></returns>
+    private IList<T> TargetFilter<T>(T searchObj, QuadTree<T> quadTree) where T : ISelectWeightData, BaseMamber, IGraphical<Rectangle>
+    {
+        IList<T> result = null;
+        if (searchObj != null && quadTree != null)
+        {
+            var inScope =
+                quadTree.GetScope(new Rectangle(searchObj.X - searchObj.ScanDiameter / 2f, searchObj.Y - searchObj.ScanDiameter / 2f,
+                    searchObj.ScanDiameter,
+                    searchObj.ScanDiameter));
+
+            var targetCount = searchObj.TargetCount;
+            // 目标列表Array
+            var targetArray = new T[targetCount];
+            // 目标权重值
+            var weightKeyArray = new float[targetCount];
+            // 根据各项权重获取合适的目标
+            // 生命值权重
+            var healthWeight = searchObj.HealthWeight;
+            // 角度权重
+            var angleWeight = searchObj.AngleWeight;
+            // 距离权重
+            var distanceWeight = searchObj.DistanceWeight;
+            // 等级权重
+            //var levelWeight = searchObj.LevelWeight;
+
+            for (var i = 0; i < inScope.Count; i++)
+            {
+                var item = inScope[i];
+                if (item.Equals(searchObj))
+                {
+                    continue;
+                }
+                // 各项权重具体实现
+                // 从列表中找到几项权重值最高的目标个数个单位
+                // 将各项值标准化, 然后乘以权重求和, 得到最高值
+
+                // 生命值标准化: 100 - 当前生命值/最大生命值*100
+                float healthStand = 100 - item.Health * 100f / item.MaxHealth;
+                // 距离标准化: 100 - 当前距离/最大距离*100
+                float distanceStand = 100 -
+                                    new Vector2(searchObj.X - item.X, searchObj.Y - item.Y).magnitude * 100f /
+                                    searchObj.ScanDiameter;
+                // 角度标准化: 100 - 当前角度 / 180 * 100
+                var angle = Math.Acos(Vector3.Dot(searchObj.Direction.normalized,
+                    new Vector3(item.X - searchObj.X, 0, item.Y - searchObj.Y).normalized));
+                float angleStand = 100 -
+                                 (float)angle * 100f / 180;
+
+                // TODO 各项为插入式结构
+                // 求权重和
+                var sumWeight = healthStand*healthWeight + distanceStand*distanceWeight + angleStand*angleWeight;
+                // 比对列表中的值, 大于其中某项值则将其替换位置并讲其后元素向后推一位.
+                for (var j = 0; j < weightKeyArray.Length; j++)
+                {
+                    if (sumWeight > weightKeyArray[j])
+                    {
+                        for (var k = weightKeyArray.Length - 1; k > j; k--)
+                        {
+                            weightKeyArray[k] = weightKeyArray[k - 1];
+                            targetArray[k] = targetArray[k - 1];
+                        }
+                        weightKeyArray[j] = sumWeight;
+                        targetArray[j] = item;
+                        break;
+                    }
+                }
+            }
+
+            result = targetArray.Where(targetItem => targetItem != null).ToList();
+        }
+        return result;
     }
 
     /// <summary>
@@ -192,8 +280,9 @@ public class TestTargetSelecter : MonoBehaviour {
             member.X = x;
             member.Y = y;
             member.MemberType = i%5 + 1;
+            member.Health = i % 5 + 1;
             // 随机给方向
-            member.Direction = new Vector3(random.Next(1, 10), 0, random.Next(1, 10));
+            member.Direction = new Vector3(random.Next(1, 100), 0, random.Next(1, 100));
             MemberList.Add(member);
             if (i == 0)
             {
@@ -206,10 +295,10 @@ public class TestTargetSelecter : MonoBehaviour {
     /// 创建单个成员载体
     /// </summary>
     /// <returns></returns>
-    private GameObject CreateOneMember()
-    {
-        return GameObject.CreatePrimitive(PrimitiveType.Cube);
-    }
+    //private GameObject CreateOneMember()
+    //{
+    //    return GameObject.CreatePrimitive(PrimitiveType.Cube);
+    //}
 }
 
 
@@ -217,8 +306,12 @@ public class TestTargetSelecter : MonoBehaviour {
 /// <summary>
 /// 单位数据
 /// </summary>
-public class Member :  SelectWeightData, BaseMamber, IGraphical<Rectangle>
+public class Member :  ISelectWeightData, BaseMamber, IGraphical<Rectangle>
 {
+
+
+    // ----------------------------暴露接口-------------------------------
+
     public float Speed
     {
         get { return speed; }
@@ -281,6 +374,14 @@ public class Member :  SelectWeightData, BaseMamber, IGraphical<Rectangle>
         set { y = value; }
     }
 
+    /// <summary>
+    /// 目标数量
+    /// </summary>
+    public int TargetCount
+    {
+        get { return targetCount;}
+        set { targetCount = value; }
+    }
 
     /// <summary>
     /// 目标点
@@ -290,6 +391,51 @@ public class Member :  SelectWeightData, BaseMamber, IGraphical<Rectangle>
         get { return direction;}
         set { direction = value; }
     }
+
+
+    /// <summary>
+    /// 生命权重
+    /// </summary>
+    public float HealthWeight {
+        get { return healthWeight;}
+        set { healthWeight = value; } }
+
+    /// <summary>
+    /// 位置权重
+    /// </summary>
+    public float DistanceWeight {
+        get {return distanceWeight;}
+        set { distanceWeight = value; } }
+
+    /// <summary>
+    /// 角度权重
+    /// </summary>
+    public float AngleWeight {
+        get { return angleWeight; }
+        set { angleWeight = value; } }
+
+    /// <summary>
+    /// 类型权重
+    /// </summary>
+    public float TypeWeight {
+        get { return typeWeight; }
+        set { typeWeight = value; } }
+
+    /// <summary>
+    /// 等级权重
+    /// </summary>
+    public float LevelWeight {
+        get { return levelWeight; }
+        set { levelWeight = value; } }
+
+
+    // ------------------------------公有属性--------------------------------
+
+
+    public string Name = "";
+
+
+    // -------------------------------私有属性--------------------------------------
 
     private float speed = 4f;
 
@@ -307,18 +453,29 @@ public class Member :  SelectWeightData, BaseMamber, IGraphical<Rectangle>
 
     private int scanDiameter = 40;
 
+    private int targetCount = 10;
+
     private float x = 0;
 
     private float y = 0;
 
-    public string Name = "";
-
     /// <summary>
     /// 目标点
     /// </summary>
-    public Vector3 direction;
+    private Vector3 direction;
 
-    
+
+    private float healthWeight = 1;
+
+    private float distanceWeight = 0.2f;
+
+    private float angleWeight = 100;
+
+    private float typeWeight;
+
+    private float levelWeight;
+
+
 
 
     /// <summary>
@@ -332,6 +489,8 @@ public class Member :  SelectWeightData, BaseMamber, IGraphical<Rectangle>
 
     private int _hisDimeter = 0;
 
+
+    // ------------------------------公有方法-------------------------------------
 
     /// <summary>
     /// 获得单位矩形占位
@@ -357,6 +516,7 @@ public class Member :  SelectWeightData, BaseMamber, IGraphical<Rectangle>
 /// </summary>
 public interface BaseMamber
 {
+    // ----------------------------------暴露接口--------------------------------------
     float Speed { get; set; }
     int MaxHealth { get; set; }
     int Health { get; set; }
@@ -365,12 +525,13 @@ public interface BaseMamber
     int MemberType { get; set; }
     int Diameter { get; set; }
     int ScanDiameter { get; set; }
+    int TargetCount { get; set; }
     float X { get; set; }
     float Y { get; set; }
-
 
     /// <summary>
     /// 目标点
     /// </summary>
     Vector3 Direction { get; set; }
+    // ----------------------------------暴露接口--------------------------------------
 }

@@ -10,7 +10,7 @@ public class TargetSelecter
 {
     // 耦合一些功能
     // 圆形,矩形,扇形, 多图形对单图形碰撞
-    public static IList<T> SearchTarget<T>(T mine, IList<T> list) where T : SelectWeightData
+    public static IList<T> SearchTarget<T>(T mine, IList<T> list) where T : ISelectWeightData
     {
         List<T> result = null;
 
@@ -39,7 +39,7 @@ public class TargetSelecter
     /// <param name="func">判断方法</param>
     /// <returns>符合条件的对象列表</returns>
     // 数据符合合并类型, 选择具体功能外抛
-    private static IList<T> Search<T>(T mine, IList<T> list, Func<T, T, bool> func) where T : SelectWeightData
+    private static IList<T> Search<T>(T mine, IList<T> list, Func<T, T, bool> func) where T : ISelectWeightData
     {
         List<T> result = null;
         if (list != null && func != null && mine != null)
@@ -142,38 +142,36 @@ public class TargetList<T> where T : IGraphical<Rectangle>
 
 /// <summary>
 /// 选择目标权重抽象类
+/// TODO 改成接口, 不适用抽象类
 /// </summary>
-public abstract class SelectWeightData
+public interface ISelectWeightData
 {
+    // 所有值都是从0-10, 0为完全不理会, 10为很重要, 并与其它权重进行合算
+
     /// <summary>
     /// 生命权重
     /// </summary>
-    public int HealthWeight { get; set; }
+    float HealthWeight { get; set; }
 
     /// <summary>
     /// 位置权重
     /// </summary>
-    public int DistanceWeight { get; set; }
+    float DistanceWeight { get; set; }
 
     /// <summary>
     /// 角度权重
     /// </summary>
-    public int AngleWeight { get; set; }
+    float AngleWeight { get; set; }
 
     /// <summary>
     /// 类型权重
     /// </summary>
-    //public int TypeWeight { get; set; }
+    float TypeWeight { get; set; }
 
     /// <summary>
     /// 等级权重
     /// </summary>
-    public int LevelWeight { get; set; }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    //public int HealthWeight { get; set; }
+    float LevelWeight { get; set; }
 
     
 }
