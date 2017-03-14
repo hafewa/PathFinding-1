@@ -73,11 +73,9 @@ public class SchoolManager : MonoBehaviour
     {
         // 验证数据有效性
         if (memberList == null || memberList.Count == 0)
-        {
-            return;
-        }
+        { return; }
         // 前方角度/2
-        var cosForwardAngle = Math.Cos(ForwardAngle / 2f);
+        var cosForwardAngle = (float)Math.Cos(ForwardAngle / 2f);
         // 遍历所有成员
         for (var i = 0; i < memberList.Count; i++)
         {
@@ -85,80 +83,18 @@ public class SchoolManager : MonoBehaviour
             var member = memberList[i];
             // 当前单位到目标的方向
             Vector3 targetDir = member.TargetPos - member.Position;
-            // 计算后最终方向
-            Vector3 finalDir = targetDir;
-            // 计算后移动速度
-            float speed = member.Speed;
             // 转向角度
             float rotate = 0f;
             // 标准化目标方向
             Vector3 normalizedTargetDir = targetDir.normalized;
-            
-
-
-            // 同队伍聚合
-            if (member.Group != null)
-            {
-                // TODO 求出几个聚合点,最近的聚合点对其产生引力(只有前方聚合点会产生引力)
-                // TODO 计算聚合点的操作可以省略掉
-                // 遍历同队成员计算方向与速度
-                for (var j = 0; j < member.Group.MemberList.Count; j++)
-                {
-                    var teammate = member.Group.MemberList[j];
-                    // 排除自己
-                    if (member.Equals(teammate)) { continue; }
-                    // 计算与队友位置差
-                    var teammateOffset = teammate.Position - member.Position;
-                    // 该向量与目标方向的夹角
-                    var teammateAngleOffset = Vector3.Dot(teammateOffset.normalized, normalizedTargetDir);
-                    // 判断队友是否在当前单位前方一定角度内
-                    if (teammateAngleOffset > cosForwardAngle)
-                    {
-                        // 在跟随区间
-                        var minDistance = member.Distance + member.Diameter;
-                        var maxDistance = member.MaxDistance + member.Diameter;
-                        if (teammateOffset.magnitude > minDistance && teammateOffset.magnitude < maxDistance)
-                        {
-                            // 向前方队友位置偏移
-                            finalDir += teammateOffset.normalized * member.RotateWeight * (1 - teammateOffset.magnitude / minDistance);
-                        }
-                        else if (teammateOffset.magnitude <= minDistance)
-                        {
-                            // 前方90度内有人, 并且距离小于改单位设置的最小间距, 对该方向产生斥力
-                            finalDir -= teammateOffset.normalized * member.RotateWeight * (teammateOffset.magnitude / minDistance);
-
-                            // 判断队友是否在当前单位两侧一定角度内
-                            //if (teammateAngleOffset < cosForwardAngle && teammateAngleOffset > -cosForwardAngle)
-                            //{bizhang
-                            speed *= teammateOffset.magnitude / minDistance;
-                            // TODO 左右绕开 使用力的方式挤开
-                            //}
-                        }
-                    }
-                    // 先删除路径功能
-                }
-            }
-            
-            // TODO 遍历附近单位(不论敌友), 检测碰撞并排除碰撞, (挤开效果), 列表中包含障碍物
-            var closeMemberList = quadTree.Retrieve(member.GetGraphical());
-            // Debug.Log(closeMemberList.Count);
-            for (var k = 0; k < closeMemberList.Count; k++)
-            {
-                var closeMember = closeMemberList[k];
-                if (!closeMember.Equals(member) && closeMember.GetGraphical().IsCollision(member.GetGraphical()))
-                {
-                    // 增加斥力, 并且该方向移动向量
-                    var vec = member.Position - closeMember.Position;
-                    // 获得向量减去, 向量的量是多少?
-                    var per = Vector3.Dot(vec.normalized, finalDir.normalized);
-                    finalDir += vec * per;
-                }
-            }
-
+            // 移动速度
+            float speed;
+            // 计算后最终方向
+            var finalDir = GetGroupGtivity(member, cosForwardAngle, out speed);
             // TODO 左右绕开
             // 当前单位位置减去周围单位的位置的和, 与最终方向相加, 这个向量做处理, 只能指向目标方向的左右90°之内, 防止调头
-
-
+            // 获取周围成员(不论敌友, 包括障碍物)的斥力引力
+            finalDir = GetCloseMemberGrivity(member, finalDir);
             // 当前方向与目标方向夹角
             var angleForTarget = Vector3.Dot(normalizedTargetDir, member.Direction);
 
@@ -196,6 +132,109 @@ public class SchoolManager : MonoBehaviour
             // 前进
             member.Position += member.Direction * speed * Time.deltaTime;
         }
+    }
+
+    /// <summary>
+    /// 计算队伍引力
+    /// </summary>
+    /// <param name="member">队员对象</param>
+    /// <param name="cosForwardAngle">前方角度</param>
+    /// <param name="speed"></param>
+    /// <returns></returns>
+    private Vector3 GetGroupGtivity(SchoolBehaviour member, float cosForwardAngle, out float speed)
+    {
+        var result = Vector3.zero;
+        
+        speed = 0;
+        // 同队伍聚合
+        if (member != null && member.Group != null)
+        {
+            var grivity = member.TargetPos - member.Position;
+            // 当前单位到目标的方向
+            Vector3 targetDir = member.TargetPos - member.Position;
+
+            speed = member.Speed;
+            // TODO 求出几个聚合点,最近的聚合点对其产生引力(只有前方聚合点会产生引力)
+            // TODO 计算聚合点的操作可以省略掉
+            // 遍历同队成员计算方向与速度
+            for (var j = 0; j < member.Group.MemberList.Count; j++)
+            {
+                var teammate = member.Group.MemberList[j];
+                // 排除自己
+                if (member.Equals(teammate)) { continue; }
+                // 计算与队友位置差
+                var teammateOffset = teammate.Position - member.Position;
+                // 该向量与目标方向的夹角
+                var teammateAngleOffset = Vector3.Dot(teammateOffset.normalized, targetDir.normalized);
+                // 判断队友是否在当前单位前方一定角度内
+                if (teammateAngleOffset > cosForwardAngle)
+                {
+                    // 在跟随区间
+                    var minDistance = member.Distance + member.Diameter;
+                    var maxDistance = member.MaxDistance + member.Diameter;
+                    if (teammateOffset.magnitude > minDistance && teammateOffset.magnitude < maxDistance)
+                    {
+                        // 向前方队友位置偏移
+                        grivity += teammateOffset.normalized * member.RotateWeight * (1 - teammateOffset.magnitude / minDistance);
+                    }
+                    else if (teammateOffset.magnitude <= minDistance)
+                    {
+                        // 前方90度内有人, 并且距离小于改单位设置的最小间距, 对该方向产生斥力
+                        grivity -= teammateOffset.normalized * member.RotateWeight * (teammateOffset.magnitude / minDistance);
+
+                        // 判断队友是否在当前单位两侧一定角度内
+                        //if (teammateAngleOffset < cosForwardAngle && teammateAngleOffset > -cosForwardAngle)
+                        //{bizhang
+                        speed *= teammateOffset.magnitude / minDistance;
+                        // TODO 左右绕开 使用力的方式挤开
+                        //}
+                    }
+                }
+                // 先删除路径功能
+            }
+            result = grivity;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 获取同区域内成员引力斥力
+    /// </summary>
+    /// <param name="member"></param>
+    /// <param name="finalDir"></param>
+    /// <returns></returns>
+    private Vector3 GetCloseMemberGrivity(SchoolBehaviour member, Vector3 finalDir)
+    {
+        if (member == null)
+        {
+            return finalDir;
+        }
+        // TODO 遍历附近单位(不论敌友), 检测碰撞并排除碰撞, (挤开效果), 列表中包含障碍物
+        var closeMemberList = quadTree.Retrieve(member.GetGraphical());
+        // Debug.Log(closeMemberList.Count);
+        var rect = member.GetGraphical();
+        for (var k = 0; k < closeMemberList.Count; k++)
+        {
+            var closeMember = closeMemberList[k];
+            if (!closeMember.Equals(member) && closeMember.GetGraphical().IsCollision(member.GetGraphical()))
+            {
+                // 增加斥力, 并且该方向移动向量
+                var vec = member.Position - closeMember.Position;
+                // 获得向量减去, 向量的量是多少?
+                var per = Vector3.Dot(vec.normalized, finalDir.normalized);
+                finalDir += vec * per;
+            }
+            // TODO 碰撞检测, 检测到碰撞, 则将对方的与本对象直线上的动量获取1/2
+            if (rect.IsCollision(closeMember.GetGraphical()))
+            {
+                // 传递动量
+                // 改变方向(硬性)
+
+            }
+        }
+
+        return finalDir;
     }
 
     
