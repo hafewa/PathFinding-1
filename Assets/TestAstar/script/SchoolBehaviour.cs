@@ -193,15 +193,6 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// </summary>
     public Action<GameObject> Complete { get; set; }
 
-    /// <summary>
-    /// 返回位置图形
-    /// </summary>
-    /// <returns>方形图形</returns>
-    public Rectangle GetGraphical()
-    {
-        return new Rectangle(transform.localPosition.x, transform.localPosition.z, diameter, diameter);
-    }
-
 
 
     /// <summary>
@@ -258,6 +249,36 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// </summary>
     private bool couldObstruct = true;
 
+
+    private float hisX;
+
+
+    private float hisY;
+
+
+    private int hisDiameter;
+
+
+    private Rectangle hisRectangle;
+
+
+    /// <summary>
+    /// 返回位置图形
+    /// </summary>
+    /// <returns>方形图形</returns>
+    public Rectangle GetGraphical()
+    {
+        // 值有变更时重新创建Rect
+        if (hisDiameter != diameter || hisX - transform.localPosition.x > 0.0001f ||
+            hisY - transform.localPosition.y > 0.0001f || hisRectangle == null)
+        {
+            hisX = transform.localPosition.x;
+            hisY = transform.localPosition.y;
+            hisDiameter = diameter;
+            hisRectangle = new Rectangle(transform.localPosition.x, transform.localPosition.z, diameter, diameter);
+        }
+        return hisRectangle;
+    }
 
     public SchoolBehaviour(int groupId)
     {

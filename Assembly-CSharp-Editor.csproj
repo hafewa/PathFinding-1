@@ -74,6 +74,7 @@
      <None Include="Assets\spine-unity\Shaders\Skeleton.shader" />
      <None Include="Assets\Examples\Spine\Goblins\goblins-mesh.atlas.txt" />
      <None Include="Assets\spine-unity\Shaders\SkeletonLit.shader" />
+     <None Include="Assets\TestAstar\Shader\ClipScroll.shader" />
      <None Include="Assets\Examples\Spine\FootSoldier\Equipment\Equipment.atlas.txt" />
  <Reference Include="UnityEditor.Advertisements">
  <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/Advertisements/Editor/UnityEditor.Advertisements.dll</HintPath>

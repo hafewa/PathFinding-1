@@ -89,6 +89,8 @@
      <Compile Include="Assets\TestAstar\script\BinaryTree.cs" />
      <Compile Include="Assets\TestAstar\script\LoadMap.cs" />
      <Compile Include="Assets\TestAstar\script\MapEditor.cs" />
+     <Compile Include="Assets\TestAstar\script\SchoolBehaviour.cs" />
+     <Compile Include="Assets\TestAstar\script\SchoolManager.cs" />
      <Compile Include="Assets\TestAstar\script\Utils.cs" />
      <Compile Include="Assets\spine-csharp\Animation.cs" />
      <Compile Include="Assets\spine-csharp\AnimationState.cs" />
@@ -152,6 +154,7 @@
      <None Include="Assets\spine-unity\Shaders\Skeleton.shader" />
      <None Include="Assets\Examples\Spine\Goblins\goblins-mesh.atlas.txt" />
      <None Include="Assets\spine-unity\Shaders\SkeletonLit.shader" />
+     <None Include="Assets\TestAstar\Shader\ClipScroll.shader" />
      <None Include="Assets\Examples\Spine\FootSoldier\Equipment\Equipment.atlas.txt" />
  <Reference Include="UnityEngine.UI">
  <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>

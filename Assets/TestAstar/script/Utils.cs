@@ -42,6 +42,31 @@ public class Utils
     public const int Accessibility = 0;
 
     /// <summary>
+    /// 弧度转角度常数
+    /// </summary>
+    public const float RadianToAngle = 180/(float)Math.PI;
+
+    /// <summary>
+    /// 角度转弧度常数
+    /// </summary>
+    public const float AngleToRadian = (float)Math.PI / 180;
+    
+    /// <summary>
+    /// 弧度转角度常数
+    /// </summary>
+    public const float HalfPI = (float)Math.PI / 2;
+
+    /// <summary>
+    /// 未计算标记
+    /// </summary>
+    public const int NotCompleted = -998;
+
+    /// <summary>
+    /// 无解标记
+    /// </summary>
+    public const int NoValue = -98;
+
+    /// <summary>
     /// 计时器tick
     /// </summary>
     private MonoEX.Timer _timer;
@@ -65,8 +90,8 @@ public class Utils
     /// <returns>map中的行列位置 0位x 1位y</returns>
     public static int[] PositionToNum(Vector3 planePosOffset, Vector3 position, float unitWidth, float mapWidth, float mapHight)
     {
-        var x = (int)((position.x - planePosOffset.x + mapWidth / 2) / unitWidth);
-        var y = (int)((position.z - planePosOffset.z + mapHight / 2) / unitWidth);
+        var x = (int)((position.x - planePosOffset.x + mapWidth * unitWidth / 2) / unitWidth);
+        var y = (int)((position.z - planePosOffset.z + mapHight * unitWidth / 2) / unitWidth);
         return new[] { x, y };
     }
 
@@ -178,6 +203,46 @@ public class Utils
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// 求射出角度
+    /// 角度 = arctan((speed^2 +- √(speed^4 - g(g*x^2 + 2yspeed^2)))/(gx))
+    /// </summary>
+    /// <param name="targetPos">目标位置</param>
+    /// <param name="startPos">其实位置</param>
+    /// <param name="speed">速度</param>
+    /// <param name="gravity">重力加速度</param>
+    /// <returns>射出角度, 如果是小于-998则无解, 否则返回射出的弧度值</returns>
+    public static float GetTheta(Vector3 targetPos, Vector3 startPos, float speed, float gravity)
+    {
+        var speedSquare = speed*speed;
+        var offsetTarget = targetPos - startPos;
+
+        // 计算角度全部取正值
+        if (offsetTarget.x < 0)
+        {
+            offsetTarget.x = -offsetTarget.x;
+        }
+
+        // 求根号中的中间量, 求是否有解
+        var delta = speedSquare * speedSquare - gravity * (gravity * offsetTarget.x * offsetTarget.x + 2 * offsetTarget.y * speedSquare);
+        if (delta < 0)
+        {
+            // 无解
+            return NoValue - 1;
+        }
+
+        var theta1 = (float)Math.Atan((speedSquare + Math.Sqrt(delta)) / (gravity * offsetTarget.x));
+        var theta2 = (float)Math.Atan((speedSquare - Math.Sqrt(delta)) / (gravity * offsetTarget.x));
+        if (theta1 < 0) {
+            theta1 = theta2;
+        }else if (theta2 < theta1) {
+            // 取小角度解
+            theta1 = theta2;
+        }
+
+        return theta1;
     }
 
     // ---------------------静态方法-------------------------

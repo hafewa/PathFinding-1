@@ -76,27 +76,31 @@ public class SchoolManager : MonoBehaviour
         {
             return;
         }
+        // 前方角度/2
         var cosForwardAngle = Math.Cos(ForwardAngle / 2f);
+        // 遍历所有成员
         for (var i = 0; i < memberList.Count; i++)
         {
             // 当前成员
             var member = memberList[i];
+            // 当前单位到目标的方向
+            Vector3 targetDir = member.TargetPos - member.Position;
             // 计算后最终方向
-            Vector3 finalDir = member.TargetPos - member.Position;
+            Vector3 finalDir = targetDir;
             // 计算后移动速度
             float speed = member.Speed;
             // 转向角度
             float rotate = 0f;
-            // 当前单位到目标的方向
-            Vector3 targetDir = member.TargetPos - member.Position;
             // 标准化目标方向
             Vector3 normalizedTargetDir = targetDir.normalized;
             
 
 
-            // 成员有效
+            // 同队伍聚合
             if (member.Group != null)
             {
+                // TODO 求出几个聚合点,最近的聚合点对其产生引力(只有前方聚合点会产生引力)
+                // TODO 计算聚合点的操作可以省略掉
                 // 遍历同队成员计算方向与速度
                 for (var j = 0; j < member.Group.MemberList.Count; j++)
                 {
@@ -126,8 +130,8 @@ public class SchoolManager : MonoBehaviour
                             // 判断队友是否在当前单位两侧一定角度内
                             //if (teammateAngleOffset < cosForwardAngle && teammateAngleOffset > -cosForwardAngle)
                             //{bizhang
-                                speed *= teammateOffset.magnitude / minDistance;
-                            // TODO 左右绕开
+                            speed *= teammateOffset.magnitude / minDistance;
+                            // TODO 左右绕开 使用力的方式挤开
                             //}
                         }
                     }
@@ -135,8 +139,8 @@ public class SchoolManager : MonoBehaviour
                 }
             }
             
-            // TODO 遍历附近单位(不论敌友), 检测碰撞并排除碰撞, (挤开效果)
-            var closeMemberList = quadTree.Retrieve(member);
+            // TODO 遍历附近单位(不论敌友), 检测碰撞并排除碰撞, (挤开效果), 列表中包含障碍物
+            var closeMemberList = quadTree.Retrieve(member.GetGraphical());
             // Debug.Log(closeMemberList.Count);
             for (var k = 0; k < closeMemberList.Count; k++)
             {
@@ -193,6 +197,8 @@ public class SchoolManager : MonoBehaviour
             member.Position += member.Direction * speed * Time.deltaTime;
         }
     }
+
+    
 
     ///// <summary>
     ///// 组队移动
