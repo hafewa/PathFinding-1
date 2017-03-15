@@ -434,6 +434,12 @@ public class Rectangle : GraphicalItem<Rectangle>
         return true;
     }
 
+
+    public override string ToString()
+    {
+        return string.Format("x:{0}, y:{1}, W:{2}, H:{3}", X, Y, Width, Height);
+    }
+
     
 }
 

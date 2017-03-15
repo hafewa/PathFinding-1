@@ -312,6 +312,7 @@ public class AstarTest : MonoBehaviour {
             school.transform.localPosition = new Vector3((i % 3) * 2, 1, i / 3 * 2);
             school.name = "item" + i;
             school.TargetPos = target;
+            school.Diameter = 1;
             //school.Moveing = (a) => { Debug.Log(a.name + "Moving");};
 
             //school.Wait = (a) => { Debug.Log(a.name + "Wait"); };

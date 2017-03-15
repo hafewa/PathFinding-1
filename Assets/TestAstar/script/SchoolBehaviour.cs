@@ -13,6 +13,14 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
 
     // ---------------------------设置属性-----------------------------
     /// <summary>
+    /// 物理信息
+    /// </summary>
+    public PhysicsInfo PhysicsInfo{
+        get { return physicsInfo ?? (physicsInfo = new PhysicsInfo()); }
+        set { physicsInfo = value; }
+    }
+
+    /// <summary>
     /// 与其他单位间距
     /// </summary>
     public float Distance {
@@ -33,8 +41,8 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// 移动速度
     /// </summary>
     public float Speed {
-        get { return speed; }
-        set { speed = value < 0 ? 1 : value; }
+        get { return PhysicsInfo.MaxSpeed; }
+        set { PhysicsInfo.MaxSpeed = value < 0 ? 1 : value; }
     }
 
     /// <summary>
@@ -57,25 +65,22 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// <summary>
     /// 单元直径
     /// </summary>
-    public int Diameter
-    {
+    public int Diameter{
         get { return diameter;}
         set { diameter = value < 0 ? 1 : value; }
     }
 
 
-    public bool CouldObstruct
-    {
+
+    public bool CouldObstruct{
         get { return couldObstruct; }
         set { couldObstruct = value; }
     }
 
 
-    public Vector3 TargetPos
-    {
+    public Vector3 TargetPos{
         get { return targetPos; }
-        set
-        {
+        set{
             // TODO 切换当前状态
             targetPos = value;
         }
@@ -89,35 +94,28 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// <summary>
     /// 组队ID, 只读
     /// </summary>
-    public int GroupId
-    {
+    public int GroupId{
         get { return groupId; }
-        set
-        {
+        set{
             // 判断是否已有group, 如果有并且ID不同, 则删除原有group中的member
-            if (value != groupId)
-            {
-                if (group != null)
-                {
+            if (value != groupId){
+                if (group != null){
                     group.MemberList.Remove(this);
                 }
 
                 var newGroup = SchoolManager.GetGroupById(value);
-                if (newGroup == null)
-                {
+                if (newGroup == null){
                     newGroup = new SchoolGroup(value);
                     SchoolManager.GroupList.Add(newGroup);
                     group = newGroup;
                 }
-                else if (group == null || group.GroupId != newGroup.GroupId)
-                {
+                else if (group == null || group.GroupId != newGroup.GroupId){
                     group = newGroup;
                 }
                 
                 // group列表中是否有改ID的group, 如果有则插入其中, 如果没有则创建
                 groupId = value;
-                if (!group.MemberList.Contains(this))
-                {
+                if (!group.MemberList.Contains(this)){
                     group.MemberList.Add(this);
                 }
             }
@@ -142,8 +140,7 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// 当前位置引用
     /// 读取与设置的为GameObject的localPosition
     /// </summary>
-    public Vector3 Position
-    {
+    public Vector3 Position{
         get { return this.transform.localPosition; }
         set { this.transform.localPosition = value; }
     }
@@ -151,29 +148,25 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// <summary>
     /// 设置旋转值
     /// </summary>
-    public Vector3 Rotate
-    {
+    public Vector3 Rotate{
         set { this.transform.Rotate(value); }
     }
 
     /// <summary>
     /// 返回当前单位的正前向量
     /// </summary>
-    public Vector3 Direction
-    {
+    public Vector3 Direction{
         get { return this.transform.forward; }
     }
 
-    public Vector3 DirectionRight
-    {
+    public Vector3 DirectionRight{
         get { return this.transform.right; }
     }
 
     /// <summary>
     /// 当前对象的gameobject的引用
     /// </summary>
-    public GameObject ItemObj
-    {
+    public GameObject ItemObj{
         get { return this.gameObject; }
     }
 
@@ -194,6 +187,10 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     public Action<GameObject> Complete { get; set; }
 
 
+    /// <summary>
+    /// 物理信息
+    /// </summary>
+    private PhysicsInfo physicsInfo = new PhysicsInfo();
 
     /// <summary>
     /// 当前单位的目标点
@@ -224,7 +221,7 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// <summary>
     /// 移动速度
     /// </summary>
-    private float speed = 10;
+    //private float speed = 10;
 
     /// <summary>
     /// 旋转速度
@@ -269,8 +266,8 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     public Rectangle GetGraphical()
     {
         // 值有变更时重新创建Rect
-        if (hisDiameter != diameter || hisX - transform.localPosition.x > 0.0001f ||
-            hisY - transform.localPosition.y > 0.0001f || hisRectangle == null)
+        if (hisDiameter != diameter || hisX - transform.localPosition.x > 0.0001f || transform.localPosition.x - hisX > 0.0001f ||
+            hisY - transform.localPosition.y > 0.0001f || transform.localPosition.y - hisY > 0.0001f || hisRectangle == null)
         {
             hisX = transform.localPosition.x;
             hisY = transform.localPosition.y;
@@ -297,12 +294,6 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
         Group.MemberList.Remove(this);
     }
 }
-
-
-
-
-
-
 
 
 
@@ -452,4 +443,77 @@ public enum SchoolItemState
     Waiting,
     // 结束状态
     Complete,
+}
+
+
+/// <summary>
+/// 集群物理信息
+/// </summary>
+public class PhysicsInfo
+{
+
+    /// <summary>
+    /// 物理动量
+    /// 动量 = 质量 * 速度
+    /// 最大动量 = 质量 * 最大速度
+    /// </summary>
+    public float Momentum {
+        get { return momentum; }
+        set
+        {
+            //var maxMomentum = quality*speed;
+            //momentum = value > maxMomentum ? maxMomentum : value;
+            momentum = value;
+        }
+    }
+
+    /// <summary>
+    /// 物体质量
+    /// </summary>
+    public float Quality
+    {
+        get { return quality; }
+        set { quality = value; }
+    }
+
+    /// <summary>
+    /// 移动速度
+    /// </summary>
+    public float Speed
+    {
+        get { return speed; }
+        set {
+            //speed = value > maxSpeed ? maxSpeed : value;
+            speed = value;
+        }
+    }
+
+    /// <summary>
+    /// 最大速度
+    /// </summary>
+    public float MaxSpeed
+    {
+        get { return maxSpeed;}
+        set { maxSpeed = value; }
+    }
+
+    /// <summary>
+    /// 动量
+    /// </summary>
+    private float momentum = 10;
+
+    /// <summary>
+    /// 质量
+    /// </summary>
+    private float quality = 1;
+
+    /// <summary>
+    /// 速度
+    /// </summary>
+    private float speed = 0;
+
+    /// <summary>
+    /// 最大速度
+    /// </summary>
+    private float maxSpeed = 10;
 }
