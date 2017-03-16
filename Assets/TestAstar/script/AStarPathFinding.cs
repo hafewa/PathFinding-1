@@ -134,8 +134,7 @@ public class AStarPathFinding
             }
 
         } while ((endNode = ExistInList(new Node(endX, endY), openList.GetEnumerator())) == null);
-
-        Debug.Log("寻路次数: " + counter);
+        
         IList<Node> path = new List<Node>();
         // 如果有可行路径
         if (endNode != null)
@@ -180,7 +179,6 @@ public class AStarPathFinding
             path = jumpPointPath;
 
         }
-        Debug.Log(string.Format("{0:#.#######}", Time.realtimeSinceStartup - now));
 
         if (completeCallback != null)
         {

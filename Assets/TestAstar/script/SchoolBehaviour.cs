@@ -87,9 +87,11 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     }
 
 
-    public float ShowSpeed;
+    //public float ShowSpeed;
 
-    public float ShowAngle;
+    //public float ShowAngle;
+
+    public float Momentum;
 
     /// <summary>
     /// 组队ID, 只读
@@ -265,14 +267,44 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// <returns>方形图形</returns>
     public Rectangle GetGraphical()
     {
-        // 值有变更时重新创建Rect
-        if (hisDiameter != diameter || hisX - transform.localPosition.x > 0.0001f || transform.localPosition.x - hisX > 0.0001f ||
-            hisY - transform.localPosition.y > 0.0001f || transform.localPosition.y - hisY > 0.0001f || hisRectangle == null)
+        //var halfDiameter = Diameter * 0.5f;
+        //var x = transform.localPosition.x - halfDiameter;
+        //var y = transform.localPosition.z - halfDiameter;
+        //var offsetX = hisX - x;
+        //var offsetY = hisY - y;
+        //// 值有变更时重新创建Rect
+        //if (hisDiameter != diameter || offsetX > Utils.ApproachZero || offsetX < Utils.ApproachKZero ||
+        //    offsetY > Utils.ApproachZero || offsetY < Utils.ApproachKZero || hisRectangle == null)
+        //{
+        //    hisX = x;
+        //    hisY = y;
+        //    hisDiameter = diameter;
+        //    hisRectangle = new Rectangle(hisX, hisY, diameter, diameter);
+        //}
+        //return hisRectangle;
+
+        //值有变更时重新创建Rect
+        var halfDiameter = Diameter * 0.5f;
+        var x = transform.localPosition.x - halfDiameter;
+        var y = transform.localPosition.z - halfDiameter;
+        if (hisDiameter != diameter || hisX - x > Utils.ApproachZero || x - hisX > Utils.ApproachZero ||
+            hisY - y > Utils.ApproachZero || y - hisY > Utils.ApproachZero)
         {
-            hisX = transform.localPosition.x;
-            hisY = transform.localPosition.y;
+            hisX = x;
+            hisY = y;
             hisDiameter = diameter;
-            hisRectangle = new Rectangle(transform.localPosition.x, transform.localPosition.z, diameter, diameter);
+            if (hisRectangle == null)
+            {
+                //Debug.Log("1");
+                hisRectangle = new Rectangle(x, y, diameter, diameter);
+            }
+            else
+            {
+                hisRectangle.X = x;
+                hisRectangle.Y = y;
+                hisRectangle.Width = diameter;
+                hisRectangle.Height = diameter;
+            }
         }
         return hisRectangle;
     }

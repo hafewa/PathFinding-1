@@ -155,6 +155,7 @@ public class AstarTest : MonoBehaviour {
         {
             main.transform.localPosition = new Vector3(main.transform.localPosition.x, main.transform.localPosition.y - 1, main.transform.localPosition.z);
         }
+        
     }
 
     /// <summary>
@@ -304,7 +305,7 @@ public class AstarTest : MonoBehaviour {
         {
             schoolItem = GameObject.CreatePrimitive(PrimitiveType.Cube);
             school = schoolItem.AddComponent<SchoolBehaviour>();
-            school.GroupId = 1;//i > 10 ? 2 : 1;
+            school.GroupId = i > 10 ? 2 : 1;
             school.Speed = 10;
             school.RotateSpeed = 1;
             school.RotateWeight = 1;
@@ -312,13 +313,15 @@ public class AstarTest : MonoBehaviour {
             school.transform.localPosition = new Vector3((i % 3) * 2, 1, i / 3 * 2);
             school.name = "item" + i;
             school.TargetPos = target;
-            school.Diameter = 1;
+            school.Diameter = i == 0 ? 10 : 2;
             //school.Moveing = (a) => { Debug.Log(a.name + "Moving");};
 
             //school.Wait = (a) => { Debug.Log(a.name + "Wait"); };
             //school.Complete = (a) => { Debug.Log(a.name + "Complete"); };
             SchoolManager.MemberList.Add(school);
         }
+
+        // TODO 将障碍物加入列表
 
         //school.Group.Target = Utils.NumToPosition(LoadMap.transform.position, new Vector2(cloneList[cloneList.Count - 1].X, cloneList[cloneList.Count - 1].Y), UnitWidth, MapWidth, MapHeight); 
         
@@ -343,5 +346,7 @@ public class AstarTest : MonoBehaviour {
         school.Group.ProportionOfComplete = 10;
         school.Group.Complete = lambdaComplete;
     }
-    
+
+
+
 }

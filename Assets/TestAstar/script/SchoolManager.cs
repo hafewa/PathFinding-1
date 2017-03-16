@@ -28,6 +28,11 @@ public class SchoolManager : MonoBehaviour
     public float ForwardAngle = 90;
 
     /// <summary>
+    /// 碰撞拥挤权重
+    /// </summary>
+    public readonly float CollisionWeight = 0.1f;
+
+    /// <summary>
     /// 组列表(全局)
     /// </summary>
     public static List<SchoolGroup> GroupList = new List<SchoolGroup>();
@@ -46,7 +51,7 @@ public class SchoolManager : MonoBehaviour
     public void Start()
     {
         // 初始化四叉树
-        quadTree = new QuadTree<SchoolBehaviour>(1, new Rectangle(MovementPlanePosition.x, MovementPlanePosition.z, MovementWidth, MovementHeight));
+        quadTree = new QuadTree<SchoolBehaviour>(0, new Rectangle(MovementPlanePosition.x - MovementWidth * 0.5f, MovementPlanePosition.z - MovementHeight * 0.5f, MovementWidth, MovementHeight));
     }
 
     public void Update()
@@ -61,8 +66,10 @@ public class SchoolManager : MonoBehaviour
 
 
         MemberMove(MemberList);
+        DrawQuadTreeLine(quadTree);
         // 清空四叉树
         quadTree.Clear();
+
     }
 
     /// <summary>
@@ -91,13 +98,14 @@ public class SchoolManager : MonoBehaviour
             float speed;
             // 计算后最终方向
             var finalDir = GetGroupGtivity(member, cosForwardAngle, out speed);
+            // 当前方向与目标方向夹角
+            var angleForTarget = Vector3.Dot(normalizedTargetDir, member.Direction);
             // TODO 左右绕开
             // 当前单位位置减去周围单位的位置的和, 与最终方向相加, 这个向量做处理, 只能指向目标方向的左右90°之内, 防止调头
             // 获取周围成员(不论敌友, 包括障碍物)的斥力引力
-            var offset = GetCloseMemberGrivity(member, finalDir);
-            // 当前方向与目标方向夹角
-            var angleForTarget = Vector3.Dot(normalizedTargetDir, member.Direction);
-
+            Vector3 aroundDir;
+            var offset = GetCloseMemberGrivity(member, out aroundDir);
+            //finalDir += aroundDir.normalized;
             // 直线移动防止抖动
             if (angleForTarget < 0.999f)
             {
@@ -126,8 +134,8 @@ public class SchoolManager : MonoBehaviour
             // TODO 目标到达判断需要屏蔽不用的轴.如Y轴
             // 使用动量计算速度.
 
-            member.ShowAngle = rotate;
-            member.ShowSpeed = speed;
+            //member.ShowAngle = rotate;
+            //member.ShowSpeed = speed;
             // 转向
             member.Rotate = Vector3.up * rotate * member.RotateSpeed * Time.deltaTime;
             // 前进
@@ -159,43 +167,53 @@ public class SchoolManager : MonoBehaviour
             // TODO 求出几个聚合点,最近的聚合点对其产生引力(只有前方聚合点会产生引力)
             // TODO 计算聚合点的操作可以省略掉
             // 遍历同队成员计算方向与速度
-            //for (var j = 0; j < member.Group.MemberList.Count; j++)
-            //{
-            //    var teammate = member.Group.MemberList[j];
-            //    // 排除自己
-            //    if (member.Equals(teammate)) { continue; }
-            //    // 计算与队友位置差
-            //    var teammateOffset = teammate.Position - member.Position;
-            //    // 该向量与目标方向的夹角
-            //    var teammateAngleOffset = Vector3.Dot(teammateOffset.normalized, targetDir.normalized);
-            //    // 判断队友是否在当前单位前方一定角度内
-            //    if (teammateAngleOffset > cosForwardAngle)
-            //    {
-            //        // 在跟随区间
-            //        var minDistance = member.Distance + member.Diameter;
-            //        var maxDistance = member.MaxDistance + member.Diameter;
-            //        if (teammateOffset.magnitude > minDistance && teammateOffset.magnitude < maxDistance)
-            //        {
-            //            // 向前方队友位置偏移
-            //            grivity += teammateOffset.normalized * member.RotateWeight * (1 - teammateOffset.magnitude / minDistance);
-            //        }
-            //        else if (teammateOffset.magnitude <= minDistance)
-            //        {
-            //            // 前方90度内有人, 并且距离小于改单位设置的最小间距, 对该方向产生斥力
-            //            grivity -= teammateOffset.normalized * member.RotateWeight * (teammateOffset.magnitude / minDistance);
+            for (var j = 0; j < member.Group.MemberList.Count; j++)
+            {
+                var teammate = member.Group.MemberList[j];
+                // 排除自己
+                if (member.Equals(teammate)) { continue; }
+                // 计算与队友位置差
+                var teammateOffset = teammate.Position - member.Position;
+                // 该向量与目标方向的夹角
+                var teammateAngleOffset = Vector3.Dot(teammateOffset.normalized, targetDir.normalized);
+                // 判断队友是否在当前单位前方一定角度内
+                if (teammateAngleOffset > cosForwardAngle)
+                {
+                    // 在跟随区间
+                    var minDistance = member.Distance + member.Diameter;
+                    var maxDistance = member.MaxDistance + member.Diameter;
+                    if (teammateOffset.magnitude > minDistance && teammateOffset.magnitude < maxDistance)
+                    {
+                        // 向前方队友位置偏移
+                        grivity += teammateOffset.normalized * member.RotateWeight * (1 - teammateOffset.magnitude / minDistance);
+                    }
+                    //else if (teammateOffset.magnitude <= minDistance)
+                    //{
+                    //    // 前方90度内有人, 并且距离小于改单位设置的最小间距, 对该方向产生斥力
+                    //    grivity -= teammateOffset.normalized * member.RotateWeight * (teammateOffset.magnitude / minDistance);
 
-            //            // 判断队友是否在当前单位两侧一定角度内
-            //            //if (teammateAngleOffset < cosForwardAngle && teammateAngleOffset > -cosForwardAngle)
-            //            //{bizhang
-            //            speed *= teammateOffset.magnitude / minDistance;
-            //            // TODO 左右绕开 使用力的方式挤开
-            //            //}
-            //        }
-            //    }
-            //    // 先删除路径功能
+                    //    // 判断队友是否在当前单位两侧一定角度内
+                    //    //if (teammateAngleOffset < cosForwardAngle && teammateAngleOffset > -cosForwardAngle)
+                    //    //{bizhang
+                    //    speed *= teammateOffset.magnitude / minDistance;
+                    //    // TODO 左右绕开 使用力的方式挤开
+                    //    //}
+                    //}
+                }
+                // 先删除路径功能
+            }
+            //member.Momentum = member.PhysicsInfo.Momentum;
+            //if (member.PhysicsInfo.Momentum < 0)
+            //{
+            //    member.PhysicsInfo.Momentum = 0;
+            //    member.PhysicsInfo.Speed = 0;
             //}
-            // TODO 生产动量, 动量上限, 动量的产生关联质量, 质量越大动量的产生越多, 这样可以推动小质量物体
-            member.PhysicsInfo.Momentum += member.PhysicsInfo.Quality * speed;
+            //else
+            //{
+            //    member.PhysicsInfo.Speed = member.PhysicsInfo.MaxSpeed;
+            //}
+            // 生产动量, 动量上限, 动量的产生关联质量, 质量越大动量的产生越多, 这样可以推动小质量物体
+            //member.PhysicsInfo.Momentum += member.PhysicsInfo.Quality * speed;
             result = grivity;
         }
 
@@ -206,19 +224,19 @@ public class SchoolManager : MonoBehaviour
     /// 获取同区域内成员引力斥力
     /// </summary>
     /// <param name="member"></param>
-    /// <param name="finalDir"></param>
     /// <returns></returns>
-    private Vector3 GetCloseMemberGrivity(SchoolBehaviour member, Vector3 finalDir)
+    private Vector3 GetCloseMemberGrivity(SchoolBehaviour member, out Vector3 aroundDir)
     {
+        aroundDir = Vector3.zero;
         if (member == null)
         {
             return Vector3.zero;
         }
 
         var result = Vector3.zero;
-        // TODO 遍历附近单位(不论敌友), 检测碰撞并排除碰撞, (挤开效果), 列表中包含障碍物
+        // 遍历附近单位(不论敌友), 检测碰撞并排除碰撞, (挤开效果), 列表中包含障碍物
         var closeMemberList = quadTree.Retrieve(member.GetGraphical());
-        // Debug.Log(closeMemberList.Count);
+        //Debug.Log(closeMemberList.Count);
         var rect = member.GetGraphical();
         for (var k = 0; k < closeMemberList.Count; k++)
         {
@@ -228,19 +246,16 @@ public class SchoolManager : MonoBehaviour
             {
                 continue;
             }
-            //if (!closeMember.Equals(member) && closeMember.GetGraphical().IsCollision(member.GetGraphical()))
-            //{
-            //    // 增加斥力, 并且该方向移动向量
-            //    var vec = member.Position - closeMember.Position;
-            //    // 获得向量减去, 向量的量是多少?
-            //    var per = Vector3.Dot(vec.normalized, finalDir.normalized);
-            //    finalDir += vec * per;
-            //}
-            // TODO 碰撞检测, 检测到碰撞, 则将对方的与本对象直线上的动量获取1/2
+
+            // TODO 绕开周围人员(向能够释放压力的方向移动, 如果没有则不动)
+            // 计算周围人员的位置, 相对位置的倒数相加, 并且不往来时方向移动
+            aroundDir += member.Position - closeMember.Position;
+
+
             var closeRect = closeMember.GetGraphical();
+            //Debug.Log(rect + "," + closeRect);
             if (rect.IsCollision(closeRect))
             {
-                // Debug.Log("IsCollision:" + rect + "," + closeRect);
                 // TODO 传递动量
                 // 求两物体相对方向
                 var offsetX = rect.X - closeRect.X;
@@ -248,25 +263,70 @@ public class SchoolManager : MonoBehaviour
                 var angleForCloseMember = Math.Atan2(offsetY, offsetX);
                 var aX = (float)Math.Cos(angleForCloseMember) * (member.Diameter + closeMember.Diameter) - (closeRect.X - rect.X);
                 var aY = (float)Math.Sin(angleForCloseMember) * (member.Diameter + closeMember.Diameter) - (closeRect.Y - rect.Y);
-                // TODO 将这些加到对方方向里, 需要将对方的目标方向暴露出来
+                //var aX = (member.Diameter + closeMember.Diameter - Math.Abs(offsetX)) * Math.Sign(offsetX);
+                //var aY = (member.Diameter + closeMember.Diameter - Math.Abs(offsetY)) * Math.Sign(offsetY);
                 var newPower = new Vector3(aX, 0, aY);
-                //finalDir += newPower;
-                result += newPower * 0.05f;
 
-                // TODO 将对方的位移放入对方对象中, 下次调用运行时加该向量并清零
-                // TODO 动量传递损失30%
-                member.PhysicsInfo.Momentum += newPower.magnitude * 0.35f;
-                closeMember.PhysicsInfo.Momentum -= newPower.magnitude * 0.5f;
+                // 大的挤开小的 碰撞方向 * 碰撞权重 * 对方体积/自己体积 * 帧时间
+                result += newPower * CollisionWeight * closeMember.Diameter * closeMember.Diameter / member.Diameter * member.Diameter * Time.deltaTime;
 
-                // TODO 该方向不能移动(硬性)
-                
+                // 将对方的位移放入对方对象中, 下次调用运行时加该向量并清零
+                // 动量传递损失30%
+                //member.PhysicsInfo.Momentum += newPower.magnitude * 0.35f;
+                //closeMember.PhysicsInfo.Momentum -= newPower.magnitude * 0.5f;
+
             }
         }
 
         return result;
     }
 
-    
+
+
+
+    /// <summary>
+    /// 绘制单元位置与四叉树分区情况
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="quadTree"></param>
+    private void DrawQuadTreeLine<T>(QuadTree<T> quadTree) where T : IGraphical<Rectangle>
+    {
+        // 绘制四叉树边框
+        DrawRect(quadTree.GetRectangle(), Color.white);
+        // 遍历四叉树内容
+        foreach (var item in quadTree.GetItemList())
+        {
+            // 绘制当前对象
+            DrawRect(item.GetGraphical(), Color.red);
+            // 绘制前进方向
+            //var position = new Vector3(item.GetGraphical().X, 0, item.Y);
+            //Debug.DrawLine(position, position + item.Direction.normalized * 2, Color.red);
+        }
+
+        if (quadTree.GetSubNodes()[0] != null)
+        {
+            foreach (var node in quadTree.GetSubNodes())
+            {
+                DrawQuadTreeLine(node);
+            }
+        }
+    }
+
+
+
+    /// <summary>
+    /// 绘制矩形
+    /// </summary>
+    /// <param name="rectangle"></param>
+    private void DrawRect(Rectangle rectangle, Color color)
+    {
+        Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
+        Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
+        Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
+        Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
+    }
+
+
 
     ///// <summary>
     ///// 组队移动

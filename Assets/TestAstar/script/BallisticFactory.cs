@@ -530,8 +530,8 @@ public class TrajectoryAlgorithm
                             var radianVec = Vector3.Slerp(centerToStart, centerToEnd, (ballistic.Position - ballistic.StartPos).magnitude / (targetDir.magnitude)) + center;//speed * (float)Math.Sin(ballistic.ShootTheta) * passedTime - gravity * passedTime * passedTime / 2;
 
                             // 震荡单位长度
-                            var shockLen = 30f;
-                            nowPos.y = radianVec.y + (float)Math.Sin((nowDir.magnitude % shockLen) * 2 / shockLen * Math.PI) * 3;
+                            var shockLen = 50f;
+                            nowPos.y = radianVec.y + (float)Math.Sin((nowDir.magnitude % shockLen) * 2 / shockLen * Math.PI);
                             // X,Z轴震荡
 
                             // 设置新位置

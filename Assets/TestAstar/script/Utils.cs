@@ -44,27 +44,48 @@ public class Utils
     /// <summary>
     /// 弧度转角度常数
     /// </summary>
-    public const float RadianToAngle = 180/(float)Math.PI;
+    public static readonly float RadianToAngle = 180/(float)Math.PI;
 
     /// <summary>
     /// 角度转弧度常数
     /// </summary>
-    public const float AngleToRadian = (float)Math.PI / 180;
-    
+    public static readonly float AngleToRadian = (float)Math.PI / 180;
+
     /// <summary>
     /// 弧度转角度常数
     /// </summary>
-    public const float HalfPI = (float)Math.PI / 2;
+    public static readonly float HalfPI = (float)Math.PI / 2;
 
     /// <summary>
     /// 未计算标记
     /// </summary>
-    public const int NotCompleted = -998;
+    public static readonly int NotCompleted = -998;
 
     /// <summary>
     /// 无解标记
     /// </summary>
-    public const int NoValue = -98;
+    public static readonly int NoValue = -98;
+
+    /// <summary>
+    /// Float类型符号位
+    /// </summary>
+    public static readonly long FloatSign = 0x80000000;
+
+    /// <summary>
+    /// Double类型符号位
+    /// </summary>
+    public static readonly ulong DoubleSign = 0x8000000000000000;
+
+    /// <summary>
+    /// 趋近0值
+    /// </summary>
+    public static readonly float ApproachZero = 0.00001f;
+
+    /// <summary>
+    /// 负趋近0值
+    /// </summary>
+    public static readonly float ApproachKZero = -0.00001f;
+
 
     /// <summary>
     /// 计时器tick

@@ -149,12 +149,12 @@ public class TestTargetSelecter : MonoBehaviour {
     private void ScanTarget()
     {
         // 遍历对象,
-        foreach (var item in MemberList.List)
-        {
+        //foreach (var item in MemberList.List)
+        //{
 
-            //var item = _leader;
-            // 根据对象的搜寻外径获取对向列表
-            var itemRect = new Rectangle(item.X - item.ScanDiameter/2f, item.Y - item.ScanDiameter/2f, item.ScanDiameter,
+        var item = _leader;
+        // 根据对象的搜寻外径获取对向列表
+        var itemRect = new Rectangle(item.X - item.ScanDiameter/2f, item.Y - item.ScanDiameter/2f, item.ScanDiameter,
                 item.ScanDiameter);
             DrawRect(itemRect, Color.red);
 
@@ -166,7 +166,7 @@ public class TestTargetSelecter : MonoBehaviour {
             {
                 Debug.DrawLine(new Vector3(item.X, 0, item.Y), new Vector3(targetItem.X, 0, targetItem.Y));
             }
-        }
+        //}
     }
 
     /// <summary>
@@ -465,11 +465,11 @@ public class Member :  ISelectWeightData, BaseMamber, IGraphical<Rectangle>
     private Vector3 direction;
 
 
-    private float healthWeight = 1;
+    private float healthWeight = 100;
 
     private float distanceWeight = 0.2f;
 
-    private float angleWeight = 100;
+    private float angleWeight = 1;
 
     private float typeWeight;
 
