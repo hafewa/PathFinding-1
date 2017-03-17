@@ -155,7 +155,7 @@ public class AstarTest : MonoBehaviour {
         {
             main.transform.localPosition = new Vector3(main.transform.localPosition.x, main.transform.localPosition.y - 1, main.transform.localPosition.z);
         }
-        
+
     }
 
     /// <summary>
@@ -313,7 +313,7 @@ public class AstarTest : MonoBehaviour {
             school.transform.localPosition = new Vector3((i % 3) * 2, 1, i / 3 * 2);
             school.name = "item" + i;
             school.TargetPos = target;
-            school.Diameter = i == 0 ? 10 : 2;
+            school.Diameter = i == 0 ? 20 : 2;
             //school.Moveing = (a) => { Debug.Log(a.name + "Moving");};
 
             //school.Wait = (a) => { Debug.Log(a.name + "Wait"); };

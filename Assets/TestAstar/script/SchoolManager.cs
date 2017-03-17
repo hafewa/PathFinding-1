@@ -30,7 +30,7 @@ public class SchoolManager : MonoBehaviour
     /// <summary>
     /// 碰撞拥挤权重
     /// </summary>
-    public readonly float CollisionWeight = 0.1f;
+    public readonly float CollisionWeight = 1f;
 
     /// <summary>
     /// 组列表(全局)
@@ -97,14 +97,12 @@ public class SchoolManager : MonoBehaviour
             // 移动速度
             float speed;
             // 计算后最终方向
-            var finalDir = GetGroupGtivity(member, cosForwardAngle, out speed);
+            var finalDir = GetGroupGtivity(member, cosForwardAngle);
             // 当前方向与目标方向夹角
             var angleForTarget = Vector3.Dot(normalizedTargetDir, member.Direction);
             // TODO 左右绕开
             // 当前单位位置减去周围单位的位置的和, 与最终方向相加, 这个向量做处理, 只能指向目标方向的左右90°之内, 防止调头
             // 获取周围成员(不论敌友, 包括障碍物)的斥力引力
-            Vector3 aroundDir;
-            var offset = GetCloseMemberGrivity(member, out aroundDir);
             //finalDir += aroundDir.normalized;
             // 直线移动防止抖动
             if (angleForTarget < 0.999f)
@@ -118,17 +116,17 @@ public class SchoolManager : MonoBehaviour
             }
 
             // 目标没有在前方 则停止并转向目标到前方角度内
-            if (angleForTarget < cosForwardAngle)
-            {
-                speed = 0f;
-                // 切换等待状态
-            }
-            else
-            {
-                // 角度越小速度约接近原始速度
-                speed *= angleForTarget;
-                // 切换行进状态
-            }
+            //if (angleForTarget < cosForwardAngle)
+            //{
+            //    speed = 0f;
+            //    // 切换等待状态
+            //}
+            //else
+            //{
+            //    // 角度越小速度约接近原始速度
+            //    speed *= angleForTarget;
+            //    // 切换行进状态
+            //}
 
             // TODO 速度不根据方向改变, 根据力改变
             // TODO 目标到达判断需要屏蔽不用的轴.如Y轴
@@ -136,11 +134,15 @@ public class SchoolManager : MonoBehaviour
 
             //member.ShowAngle = rotate;
             //member.ShowSpeed = speed;
+
+            // TODO 这里的计算需要更改, 变成方向乘以速度算出的距离
             // 转向
             member.Rotate = Vector3.up * rotate * member.RotateSpeed * Time.deltaTime;
             // 前进
-            member.Position += member.Direction * speed * Time.deltaTime;
-            member.Position += offset;
+            // TODO speed 用作引力产生系数用
+            member.Position += member.PhysicsInfo.Momentum / member.PhysicsInfo.Quality * Time.deltaTime;//member.Direction * speed * Time.deltaTime;
+            GetCloseMemberGrivity(member);
+            // member.Position += offset;
         }
     }
 
@@ -151,11 +153,11 @@ public class SchoolManager : MonoBehaviour
     /// <param name="cosForwardAngle">前方角度</param>
     /// <param name="speed"></param>
     /// <returns></returns>
-    private Vector3 GetGroupGtivity(SchoolBehaviour member, float cosForwardAngle, out float speed)
+    private Vector3 GetGroupGtivity(SchoolBehaviour member, float cosForwardAngle)
     {
         var result = Vector3.zero;
         
-        speed = 0;
+        // speed = 0;
         // 同队伍聚合
         if (member != null && member.Group != null)
         {
@@ -163,7 +165,7 @@ public class SchoolManager : MonoBehaviour
             // 当前单位到目标的方向
             Vector3 targetDir = member.TargetPos - member.Position;
 
-            speed = member.Speed;
+            // speed = member.Speed;
             // TODO 求出几个聚合点,最近的聚合点对其产生引力(只有前方聚合点会产生引力)
             // TODO 计算聚合点的操作可以省略掉
             // 遍历同队成员计算方向与速度
@@ -187,21 +189,34 @@ public class SchoolManager : MonoBehaviour
                         // 向前方队友位置偏移
                         grivity += teammateOffset.normalized * member.RotateWeight * (1 - teammateOffset.magnitude / minDistance);
                     }
-                    //else if (teammateOffset.magnitude <= minDistance)
-                    //{
-                    //    // 前方90度内有人, 并且距离小于改单位设置的最小间距, 对该方向产生斥力
-                    //    grivity -= teammateOffset.normalized * member.RotateWeight * (teammateOffset.magnitude / minDistance);
+                    else if (teammateOffset.magnitude <= minDistance)
+                    {
+                        // 前方90度内有人, 并且距离小于改单位设置的最小间距, 对该方向产生斥力
+                        grivity -= teammateOffset.normalized * member.RotateWeight * (teammateOffset.magnitude / minDistance);
 
-                    //    // 判断队友是否在当前单位两侧一定角度内
-                    //    //if (teammateAngleOffset < cosForwardAngle && teammateAngleOffset > -cosForwardAngle)
-                    //    //{bizhang
-                    //    speed *= teammateOffset.magnitude / minDistance;
-                    //    // TODO 左右绕开 使用力的方式挤开
-                    //    //}
-                    //}
+                        // 判断队友是否在当前单位两侧一定角度内
+                        //if (teammateAngleOffset < cosForwardAngle && teammateAngleOffset > -cosForwardAngle)
+                        //{bizhang
+                        //speed *= teammateOffset.magnitude / minDistance;
+                        //}
+                    }
                 }
                 // 先删除路径功能
             }
+
+            // TODO 操作动量, 产生前进动量, 这个动量不会超过引力方向最大速度
+            //var angleForMG = Vector3.Angle(member.PhysicsInfo.Momentum, grivity);
+            //if (angleForMG > 1)
+            //{
+                // TODO 如果角度大于90度, 
+            member.PhysicsInfo.Momentum += grivity;
+            if (member.PhysicsInfo.Speed > member.PhysicsInfo.MaxSpeed)
+            {
+                member.PhysicsInfo.Momentum *= member.PhysicsInfo.MaxSpeed / member.PhysicsInfo.Speed;
+            }
+            //}
+
+
             //member.Momentum = member.PhysicsInfo.Momentum;
             //if (member.PhysicsInfo.Momentum < 0)
             //{
@@ -214,6 +229,7 @@ public class SchoolManager : MonoBehaviour
             //}
             // 生产动量, 动量上限, 动量的产生关联质量, 质量越大动量的产生越多, 这样可以推动小质量物体
             //member.PhysicsInfo.Momentum += member.PhysicsInfo.Quality * speed;
+
             result = grivity;
         }
 
@@ -225,12 +241,11 @@ public class SchoolManager : MonoBehaviour
     /// </summary>
     /// <param name="member"></param>
     /// <returns></returns>
-    private Vector3 GetCloseMemberGrivity(SchoolBehaviour member, out Vector3 aroundDir)
+    private void GetCloseMemberGrivity(SchoolBehaviour member)
     {
-        aroundDir = Vector3.zero;
         if (member == null)
         {
-            return Vector3.zero;
+            return;
         }
 
         var result = Vector3.zero;
@@ -246,10 +261,10 @@ public class SchoolManager : MonoBehaviour
             {
                 continue;
             }
+            // TODO 判断两对象是否以计算过, 如果计算过不再计算
 
             // TODO 绕开周围人员(向能够释放压力的方向移动, 如果没有则不动)
             // 计算周围人员的位置, 相对位置的倒数相加, 并且不往来时方向移动
-            aroundDir += member.Position - closeMember.Position;
 
 
             var closeRect = closeMember.GetGraphical();
@@ -258,27 +273,53 @@ public class SchoolManager : MonoBehaviour
             {
                 // TODO 传递动量
                 // 求两物体相对方向
-                var offsetX = rect.X - closeRect.X;
-                var offsetY = rect.Y - closeRect.Y;
-                var angleForCloseMember = Math.Atan2(offsetY, offsetX);
-                var aX = (float)Math.Cos(angleForCloseMember) * (member.Diameter + closeMember.Diameter) - (closeRect.X - rect.X);
-                var aY = (float)Math.Sin(angleForCloseMember) * (member.Diameter + closeMember.Diameter) - (closeRect.Y - rect.Y);
-                //var aX = (member.Diameter + closeMember.Diameter - Math.Abs(offsetX)) * Math.Sign(offsetX);
-                //var aY = (member.Diameter + closeMember.Diameter - Math.Abs(offsetY)) * Math.Sign(offsetY);
-                var newPower = new Vector3(aX, 0, aY);
+                //var offsetX = rect.X - closeRect.X;
+                //var offsetY = rect.Y - closeRect.Y;
+                //var angleForCloseMember = Math.Atan2(offsetY, offsetX);
+                //var sumDiameter = member.Diameter + closeMember.Diameter;
+                //var aX = (float)Math.Cos(angleForCloseMember) * (sumDiameter) - (closeRect.X - rect.X);
+                //var aY = (float)Math.Sin(angleForCloseMember) * (sumDiameter) - (closeRect.Y - rect.Y);
+                ////var aX = (member.Diameter + closeMember.Diameter - Math.Abs(offsetX)) * Math.Sign(offsetX);
+                ////var aY = (member.Diameter + closeMember.Diameter - Math.Abs(offsetY)) * Math.Sign(offsetY);
+                //var newPower = new Vector3(aX, 0, aY);
 
-                // 大的挤开小的 碰撞方向 * 碰撞权重 * 对方体积/自己体积 * 帧时间
-                result += newPower * CollisionWeight * closeMember.Diameter * closeMember.Diameter / member.Diameter * member.Diameter * Time.deltaTime;
+                //// 大的挤开小的 碰撞方向 * 碰撞权重 * 对方体积/自己体积 * 帧时间
+                //result += newPower * CollisionWeight * Time.deltaTime;
+                ////float volumeRatio = closeMember.Diameter*closeMember.Diameter/(member.Diameter*member.Diameter);
+                //member.Position += result;
+                //closeMember.Position -= result;
 
-                // 将对方的位移放入对方对象中, 下次调用运行时加该向量并清零
-                // 动量传递损失30%
-                //member.PhysicsInfo.Momentum += newPower.magnitude * 0.35f;
-                //closeMember.PhysicsInfo.Momentum -= newPower.magnitude * 0.5f;
+                // 求两物体相对角度
+                var subAngle = Vector3.Angle(member.Direction, closeMember.Direction);
+
+                // 动量传递
+                var memberE = member.PhysicsInfo.Momentum;
+                var closeMemberE = closeMember.PhysicsInfo.Momentum;
+                // 求两对象面积(用于代替质量来计算能量传递
+                var memberArea = member.Diameter*member.Diameter;
+                var closeMemberArea = closeMember.Diameter * closeMember.Diameter;
+                // 计算角度与分量
+                // 求碰撞角
+                // 两分量相互垂直
+                // 去分量1的长度(传递过去的动量), 系数 * 面积比 * 角度差 * 速度差
+                // TODO 测试先给目标方向一半的动量
+                var departE1 = (memberE - closeMemberE).normalized * memberE.magnitude * (float) Math.Sin(subAngle) * memberArea / closeMemberArea;//CollisionWeight * memberArea / closeMemberArea * memberE * (float)Math.Sin(subAngle) * ((memberE - closeMemberE).magnitude / memberE.magnitude);
+                if (departE1.magnitude > memberE.magnitude)
+                {
+                    departE1 *= memberE.magnitude / departE1.magnitude;
+                }
+
+                // 分量2方向, 用原始动量减去分量1
+                var departE2 = memberE - departE1;
+                member.PhysicsInfo.Momentum = departE2;
+                closeMember.PhysicsInfo.Momentum += departE1;
+
+                // TODO 使用动量计算当前速度 自加速不能超过最大速度, 但是力传导可以达到并超过最大速度
 
             }
         }
 
-        return result;
+        //return result;
     }
 
 
@@ -288,24 +329,21 @@ public class SchoolManager : MonoBehaviour
     /// 绘制单元位置与四叉树分区情况
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    /// <param name="quadTree"></param>
-    private void DrawQuadTreeLine<T>(QuadTree<T> quadTree) where T : IGraphical<Rectangle>
+    /// <param name="argQuadTree"></param>
+    private void DrawQuadTreeLine<T>(QuadTree<T> argQuadTree) where T : IGraphical<Rectangle>
     {
         // 绘制四叉树边框
-        DrawRect(quadTree.GetRectangle(), Color.white);
+        DrawRect(argQuadTree.GetRectangle(), Color.white);
         // 遍历四叉树内容
-        foreach (var item in quadTree.GetItemList())
+        foreach (var item in argQuadTree.GetItemList())
         {
             // 绘制当前对象
             DrawRect(item.GetGraphical(), Color.red);
-            // 绘制前进方向
-            //var position = new Vector3(item.GetGraphical().X, 0, item.Y);
-            //Debug.DrawLine(position, position + item.Direction.normalized * 2, Color.red);
         }
 
-        if (quadTree.GetSubNodes()[0] != null)
+        if (argQuadTree.GetSubNodes()[0] != null)
         {
-            foreach (var node in quadTree.GetSubNodes())
+            foreach (var node in argQuadTree.GetSubNodes())
             {
                 DrawQuadTreeLine(node);
             }
@@ -510,7 +548,7 @@ public class SchoolManager : MonoBehaviour
     //        // TODO 这个实现破坏结构需要重构, 结构设计问题
     //        // 减去该方向的力
     //        // 前方有人完全无法走动情况减速
-    //        var closeMemberList = quadTree.Retrieve(member);
+    //        var closeMemberList = argquadTree.Retrieve(member);
 
     //        foreach (var closeMember in closeMemberList)
     //        {

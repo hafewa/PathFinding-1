@@ -16,8 +16,19 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// 物理信息
     /// </summary>
     public PhysicsInfo PhysicsInfo{
-        get { return physicsInfo ?? (physicsInfo = new PhysicsInfo()); }
-        set { physicsInfo = value; }
+        get
+        {
+            if (physicsInfo == null)
+            {
+                physicsInfo = new PhysicsInfo();
+            }
+            if (physicsInfo.Quality < Utils.ApproachZero)
+            {
+                physicsInfo.Quality =  Diameter * Diameter;
+            }
+            return physicsInfo; 
+            
+        }
     }
 
     /// <summary>
@@ -65,7 +76,7 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// <summary>
     /// 单元直径
     /// </summary>
-    public int Diameter{
+    public float Diameter{
         get { return diameter;}
         set { diameter = value < 0 ? 1 : value; }
     }
@@ -91,7 +102,7 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
 
     //public float ShowAngle;
 
-    public float Momentum;
+    //public float Momentum;
 
     /// <summary>
     /// 组队ID, 只读
@@ -239,7 +250,7 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// <summary>
     /// 单元直径
     /// </summary>
-    private int diameter = 1;
+    private float diameter = 1;
 
     /// <summary>
     /// 是否可被阻挡
@@ -255,7 +266,7 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     private float hisY;
 
 
-    private int hisDiameter;
+    private float hisDiameter;
 
 
     private Rectangle hisRectangle;
@@ -287,8 +298,12 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
         var halfDiameter = Diameter * 0.5f;
         var x = transform.localPosition.x - halfDiameter;
         var y = transform.localPosition.z - halfDiameter;
-        if (hisDiameter != diameter || hisX - x > Utils.ApproachZero || x - hisX > Utils.ApproachZero ||
-            hisY - y > Utils.ApproachZero || y - hisY > Utils.ApproachZero)
+        if (hisDiameter - diameter > Utils.ApproachZero ||
+            diameter - hisDiameter > Utils.ApproachZero ||
+            hisX - x > Utils.ApproachZero ||
+            x - hisX > Utils.ApproachZero ||
+            hisY - y > Utils.ApproachZero ||
+            y - hisY > Utils.ApproachZero)
         {
             hisX = x;
             hisY = y;
@@ -489,7 +504,7 @@ public class PhysicsInfo
     /// 动量 = 质量 * 速度
     /// 最大动量 = 质量 * 最大速度
     /// </summary>
-    public float Momentum {
+    public Vector3 Momentum {
         get { return momentum; }
         set
         {
@@ -498,6 +513,15 @@ public class PhysicsInfo
             momentum = value;
         }
     }
+
+    ///// <summary>
+    ///// 动向方向
+    ///// </summary>
+    //public Vector3 Direction
+    //{
+    //    get { return direction; }
+    //    set { direction = value.normalized; }
+    //}
 
     /// <summary>
     /// 物体质量
@@ -513,11 +537,11 @@ public class PhysicsInfo
     /// </summary>
     public float Speed
     {
-        get { return speed; }
-        set {
-            //speed = value > maxSpeed ? maxSpeed : value;
-            speed = value;
-        }
+        get { return Momentum.magnitude / Quality; }
+        //set {
+        //    //speed = value > maxSpeed ? maxSpeed : value;
+        //    speed = value;
+        //}
     }
 
     /// <summary>
@@ -532,7 +556,12 @@ public class PhysicsInfo
     /// <summary>
     /// 动量
     /// </summary>
-    private float momentum = 10;
+    private Vector3 momentum;
+
+    ///// <summary>
+    ///// 动量方向
+    ///// </summary>
+    //private Vector3 direction;
 
     /// <summary>
     /// 质量
