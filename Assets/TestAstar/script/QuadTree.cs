@@ -24,7 +24,7 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     /// <summary>
     /// 最大树深度
     /// </summary>
-    private int maxLevel = 5;
+    private int maxLevel = 7;
 
     /// <summary>
     /// 当前四叉树所在等级

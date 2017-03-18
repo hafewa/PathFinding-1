@@ -30,7 +30,7 @@ public class SchoolManager : MonoBehaviour
     /// <summary>
     /// 碰撞拥挤权重
     /// </summary>
-    public readonly float CollisionWeight = 1f;
+    public float CollisionWeight = 5f;
 
     /// <summary>
     /// 组列表(全局)
@@ -40,8 +40,12 @@ public class SchoolManager : MonoBehaviour
     /// <summary>
     /// 成员列表(全局)
     /// </summary>
-    public static List<SchoolBehaviour> MemberList = new List<SchoolBehaviour>(); 
+    public static List<SchoolBehaviour> MemberList = new List<SchoolBehaviour>();
 
+    /// <summary>
+    /// 已对比碰撞对象ID的列表
+    /// </summary>
+    private List<string> areadyCollisionList = new List<string>();  
 
     /// <summary>
     /// 四叉树对象
@@ -58,15 +62,12 @@ public class SchoolManager : MonoBehaviour
     {
         // 将所有单位放入四叉树
         quadTree.Insert(MemberList);
-        // 挨个更新队伍位置
-        //for (var i = 0; i < GroupList.Count; i++)
-        //{
-        //    GroupMove(GroupList[i]);
-        //}
 
-
+        // 单位移动
         MemberMove(MemberList);
+        // 绘制四叉树
         DrawQuadTreeLine(quadTree);
+
         // 清空四叉树
         quadTree.Clear();
 
@@ -116,34 +117,32 @@ public class SchoolManager : MonoBehaviour
             }
 
             // 目标没有在前方 则停止并转向目标到前方角度内
-            //if (angleForTarget < cosForwardAngle)
-            //{
-            //    speed = 0f;
-            //    // 切换等待状态
-            //}
-            //else
-            //{
-            //    // 角度越小速度约接近原始速度
-            //    speed *= angleForTarget;
-            //    // 切换行进状态
-            //}
+            if (angleForTarget < cosForwardAngle)
+            {
+                member.PhysicsInfo.SpeedDirection *= 0f;
+                // 切换等待状态
+            }
+            else
+            {
+                // 角度越小速度约接近原始速度
+                member.PhysicsInfo.SpeedDirection *= angleForTarget;
+                // 切换行进状态
+            }
 
-            // TODO 速度不根据方向改变, 根据力改变
-            // TODO 目标到达判断需要屏蔽不用的轴.如Y轴
-            // 使用动量计算速度.
 
-            //member.ShowAngle = rotate;
-            //member.ShowSpeed = speed;
-
-            // TODO 这里的计算需要更改, 变成方向乘以速度算出的距离
             // 转向
             member.Rotate = Vector3.up * rotate * member.RotateSpeed * Time.deltaTime;
             // 前进
             // TODO speed 用作引力产生系数用
-            member.Position += member.PhysicsInfo.Momentum / member.PhysicsInfo.Quality * Time.deltaTime;//member.Direction * speed * Time.deltaTime;
+            member.Position += member.PhysicsInfo.SpeedDirection * Time.deltaTime;//member.Direction * speed * Time.deltaTime;
             GetCloseMemberGrivity(member);
-            // member.Position += offset;
+
+            // 速度消耗, 百分比衰减
+            member.PhysicsInfo.SpeedDirection *= 0.993f;
         }
+
+        // 清空对比列表
+        areadyCollisionList.Clear();
     }
 
     /// <summary>
@@ -208,12 +207,14 @@ public class SchoolManager : MonoBehaviour
             //var angleForMG = Vector3.Angle(member.PhysicsInfo.Momentum, grivity);
             //if (angleForMG > 1)
             //{
-                // TODO 如果角度大于90度, 
-            member.PhysicsInfo.Momentum += grivity;
-            if (member.PhysicsInfo.Speed > member.PhysicsInfo.MaxSpeed)
-            {
-                member.PhysicsInfo.Momentum *= member.PhysicsInfo.MaxSpeed / member.PhysicsInfo.Speed;
-            }
+            // TODO 当前方向的速度不为MaxSpeed时使用引力
+            // 计算千斤方向的speed
+            // TODO 如果角度大于90度, 
+            //member.PhysicsInfo.Momentum += grivity.normalized;
+            //if (member.PhysicsInfo.Speed > member.PhysicsInfo.MaxSpeed)
+            //{
+            //    member.PhysicsInfo.Momentum *= member.PhysicsInfo.MaxSpeed / member.PhysicsInfo.Speed;
+            //}
             //}
 
 
@@ -229,6 +230,10 @@ public class SchoolManager : MonoBehaviour
             //}
             // 生产动量, 动量上限, 动量的产生关联质量, 质量越大动量的产生越多, 这样可以推动小质量物体
             //member.PhysicsInfo.Momentum += member.PhysicsInfo.Quality * speed;
+
+            Debug.DrawLine(member.Position, grivity + member.Position);
+            // 操作动量, 产生前进动量, 这个动量不会超过引力方向最大速度
+            member.PhysicsInfo.SpeedDirection += grivity.normalized * CollisionWeight * Time.deltaTime;
 
             result = grivity;
         }
@@ -247,79 +252,95 @@ public class SchoolManager : MonoBehaviour
         {
             return;
         }
-
-        var result = Vector3.zero;
+        
         // 遍历附近单位(不论敌友), 检测碰撞并排除碰撞, (挤开效果), 列表中包含障碍物
         var closeMemberList = quadTree.Retrieve(member.GetGraphical());
-        //Debug.Log(closeMemberList.Count);
         var rect = member.GetGraphical();
         for (var k = 0; k < closeMemberList.Count; k++)
         {
             var closeMember = closeMemberList[k];
-            // Debug.Log("IsCollision:" + rect);
             if (closeMember.Equals(member))
             {
                 continue;
             }
-            // TODO 判断两对象是否以计算过, 如果计算过不再计算
 
             // TODO 绕开周围人员(向能够释放压力的方向移动, 如果没有则不动)
             // 计算周围人员的位置, 相对位置的倒数相加, 并且不往来时方向移动
 
-
-            var closeRect = closeMember.GetGraphical();
-            //Debug.Log(rect + "," + closeRect);
-            if (rect.IsCollision(closeRect))
+            // 判断两对象是否以计算过, 如果计算过不再计算
+            var compereId1 = string.Format("{0},{1}", member.Id, closeMember.Id);
+            var compereId2 = string.Format("{0},{1}", closeMember.Id, member.Id);
+            if (!areadyCollisionList.Contains(compereId1) &&
+                !areadyCollisionList.Contains(compereId2))
             {
-                // TODO 传递动量
-                // 求两物体相对方向
-                //var offsetX = rect.X - closeRect.X;
-                //var offsetY = rect.Y - closeRect.Y;
-                //var angleForCloseMember = Math.Atan2(offsetY, offsetX);
-                //var sumDiameter = member.Diameter + closeMember.Diameter;
-                //var aX = (float)Math.Cos(angleForCloseMember) * (sumDiameter) - (closeRect.X - rect.X);
-                //var aY = (float)Math.Sin(angleForCloseMember) * (sumDiameter) - (closeRect.Y - rect.Y);
-                ////var aX = (member.Diameter + closeMember.Diameter - Math.Abs(offsetX)) * Math.Sign(offsetX);
-                ////var aY = (member.Diameter + closeMember.Diameter - Math.Abs(offsetY)) * Math.Sign(offsetY);
-                //var newPower = new Vector3(aX, 0, aY);
+                var closeRect = closeMember.GetGraphical();
 
-                //// 大的挤开小的 碰撞方向 * 碰撞权重 * 对方体积/自己体积 * 帧时间
-                //result += newPower * CollisionWeight * Time.deltaTime;
-                ////float volumeRatio = closeMember.Diameter*closeMember.Diameter/(member.Diameter*member.Diameter);
-                //member.Position += result;
-                //closeMember.Position -= result;
-
-                // 求两物体相对角度
-                var subAngle = Vector3.Angle(member.Direction, closeMember.Direction);
-
-                // 动量传递
-                var memberE = member.PhysicsInfo.Momentum;
-                var closeMemberE = closeMember.PhysicsInfo.Momentum;
-                // 求两对象面积(用于代替质量来计算能量传递
-                var memberArea = member.Diameter*member.Diameter;
-                var closeMemberArea = closeMember.Diameter * closeMember.Diameter;
-                // 计算角度与分量
-                // 求碰撞角
-                // 两分量相互垂直
-                // 去分量1的长度(传递过去的动量), 系数 * 面积比 * 角度差 * 速度差
-                // TODO 测试先给目标方向一半的动量
-                var departE1 = (memberE - closeMemberE).normalized * memberE.magnitude * (float) Math.Sin(subAngle) * memberArea / closeMemberArea;//CollisionWeight * memberArea / closeMemberArea * memberE * (float)Math.Sin(subAngle) * ((memberE - closeMemberE).magnitude / memberE.magnitude);
-                if (departE1.magnitude > memberE.magnitude)
+                if (rect.IsCollision(closeRect))
                 {
-                    departE1 *= memberE.magnitude / departE1.magnitude;
+                    // TODO 传递动量
+                    // 求两物体相对方向
+                    //var offsetX = rect.X - closeRect.X;
+                    //var offsetY = rect.Y - closeRect.Y;
+                    //var angleForCloseMember = Math.Atan2(offsetY, offsetX);
+                    //var sumDiameter = member.Diameter + closeMember.Diameter;
+                    //var aX = (float)Math.Cos(angleForCloseMember) * (sumDiameter) - (closeRect.X - rect.X);
+                    //var aY = (float)Math.Sin(angleForCloseMember) * (sumDiameter) - (closeRect.Y - rect.Y);
+                    ////var aX = (member.Diameter + closeMember.Diameter - Math.Abs(offsetX)) * Math.Sign(offsetX);
+                    ////var aY = (member.Diameter + closeMember.Diameter - Math.Abs(offsetY)) * Math.Sign(offsetY);
+                    //var newPower = new Vector3(aX, 0, aY);
+
+                    //// 大的挤开小的 碰撞方向 * 碰撞权重 * 对方体积/自己体积 * 帧时间
+                    //result += newPower * CollisionWeight * Time.deltaTime;
+                    ////float volumeRatio = closeMember.Diameter*closeMember.Diameter/(member.Diameter*member.Diameter);
+                    //member.Position += result;
+                    //closeMember.Position -= result;
+
+                    // 求两物体相对角度
+                    //var subAngle = Vector3.Angle(member.Direction, closeMember.Direction);
+
+                    //// 动量传递
+                    //var memberE = member.PhysicsInfo.Momentum;
+                    //var closeMemberE = closeMember.PhysicsInfo.Momentum;
+                    //// 求两对象面积(用于代替质量来计算能量传递
+                    //var memberArea = member.Diameter*member.Diameter;
+                    //var closeMemberArea = closeMember.Diameter * closeMember.Diameter;
+                    // 计算角度与分量
+                    // 求碰撞角
+                    // 两分量相互垂直
+                    // 去分量1的长度(传递过去的动量), 系数 * 面积比 * 角度差 * 速度差
+                    // TODO 测试先给目标方向一半的动量
+                    //var departE1 = (memberE - closeMemberE).normalized * memberE.magnitude * (float) Math.Sin(subAngle) * memberArea / closeMemberArea;//CollisionWeight * memberArea / closeMemberArea * memberE * (float)Math.Sin(subAngle) * ((memberE - closeMemberE).magnitude / memberE.magnitude);
+                    //if (departE1.magnitude > memberE.magnitude)
+                    //{
+                    //    departE1 *= memberE.magnitude / departE1.magnitude;
+                    //}
+
+                    // 分量2方向, 用原始动量减去分量1
+                    //var departE2 = memberE - departE1;
+                    //member.PhysicsInfo.Momentum = departE2;
+                    //closeMember.PhysicsInfo.Momentum += departE1;
+
+                    // TODO 重复判断导致数值过大溢出
+                    // TODO 使用动量计算当前速度 自加速不能超过最大速度, 但是力传导可以达到并超过最大速度
+                    var diffPosition = member.Position - closeMember.Position;
+                    //var angleForToCloseMember = Math.Atan2(diffPosition.z, diffPosition.x);
+                    //var sumForRadius = member.Diameter + closeMember.Diameter;
+                    // 碰撞时传递速度, 将自己的速度传递一部分给对方
+                    //var departSpeed = member.PhysicsInfo.SpeedDirection -
+                    //                  closeMember.PhysicsInfo.SpeedDirection +
+                    //                  new Vector3((float) Math.Cos(angleForToCloseMember)*sumForRadius, 0,
+                    //                      (float) Math.Sin(angleForToCloseMember)*sumForRadius);
+                    var departSpeed = closeMember.PhysicsInfo.SpeedDirection - member.PhysicsInfo.SpeedDirection;
+                    // 速度的传递经过质量相关的动量计算
+                    member.PhysicsInfo.SpeedDirection += departSpeed*closeMember.PhysicsInfo.Quality/
+                                                         member.PhysicsInfo.Quality;
+                    closeMember.PhysicsInfo.SpeedDirection -= departSpeed;
+                    // 加入已对比列表
+                    areadyCollisionList.Add(compereId1);
                 }
-
-                // 分量2方向, 用原始动量减去分量1
-                var departE2 = memberE - departE1;
-                member.PhysicsInfo.Momentum = departE2;
-                closeMember.PhysicsInfo.Momentum += departE1;
-
-                // TODO 使用动量计算当前速度 自加速不能超过最大速度, 但是力传导可以达到并超过最大速度
-
             }
+            
         }
-
-        //return result;
     }
 
 

@@ -11,6 +11,8 @@ using UnityEngine;
 public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
 {
 
+    public long Id { get; private set; }
+
     // ---------------------------设置属性-----------------------------
     /// <summary>
     /// 物理信息
@@ -132,6 +134,8 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
                     group.MemberList.Add(this);
                 }
             }
+            // 对象ID
+            Id = ++id;
         }
     }
 
@@ -251,6 +255,11 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// 单元直径
     /// </summary>
     private float diameter = 1;
+
+    /// <summary>
+    /// 用于标记对象
+    /// </summary>
+    private static long id;
 
     /// <summary>
     /// 是否可被阻挡
@@ -504,14 +513,21 @@ public class PhysicsInfo
     /// 动量 = 质量 * 速度
     /// 最大动量 = 质量 * 最大速度
     /// </summary>
-    public Vector3 Momentum {
-        get { return momentum; }
-        set
-        {
-            //var maxMomentum = quality*speed;
-            //momentum = value > maxMomentum ? maxMomentum : value;
-            momentum = value;
-        }
+    public float Momentum {
+        get { return SpeedDirection.magnitude * Quality; }
+        //set
+        //{
+        //    momentum = value;
+        //}
+    }
+
+    /// <summary>
+    /// 速度方向
+    /// </summary>
+    public Vector3 SpeedDirection
+    {
+        get { return speedDirection; }
+        set { speedDirection = value; }
     }
 
     ///// <summary>
@@ -535,14 +551,14 @@ public class PhysicsInfo
     /// <summary>
     /// 移动速度
     /// </summary>
-    public float Speed
-    {
-        get { return Momentum.magnitude / Quality; }
-        //set {
-        //    //speed = value > maxSpeed ? maxSpeed : value;
-        //    speed = value;
-        //}
-    }
+    //public float Speed
+    //{
+    //    get { return Momentum.magnitude / Quality; }
+    //    //set {
+    //    //    //speed = value > maxSpeed ? maxSpeed : value;
+    //    //    speed = value;
+    //    //}
+    //}
 
     /// <summary>
     /// 最大速度
@@ -553,10 +569,15 @@ public class PhysicsInfo
         set { maxSpeed = value; }
     }
 
+    ///// <summary>
+    ///// 动量
+    ///// </summary>
+    //private Vector3 momentum;
+
     /// <summary>
-    /// 动量
+    /// 速度方向
     /// </summary>
-    private Vector3 momentum;
+    private Vector3 speedDirection;
 
     ///// <summary>
     ///// 动量方向
@@ -571,7 +592,7 @@ public class PhysicsInfo
     /// <summary>
     /// 速度
     /// </summary>
-    private float speed = 0;
+    //private float speed = 0;
 
     /// <summary>
     /// 最大速度
