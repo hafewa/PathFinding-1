@@ -18,29 +18,17 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// 物理信息
     /// </summary>
     public PhysicsInfo PhysicsInfo{
-        get
-        {
-            if (physicsInfo == null)
-            {
+        get {
+            if (physicsInfo == null) {
                 physicsInfo = new PhysicsInfo();
             }
-            if (physicsInfo.Quality < Utils.ApproachZero)
-            {
+            if (physicsInfo.Quality < Utils.ApproachZero) {
                 physicsInfo.Quality =  Diameter * Diameter;
             }
-            return physicsInfo; 
-            
+            return physicsInfo;
         }
     }
-
-    /// <summary>
-    /// 与其他单位间距
-    /// </summary>
-    public float Distance {
-        get { return distance; }
-        set { distance = value < 0 ? 0 : value; }
-    }
-
+    
     /// <summary>
     /// 与其他单位组队最大距离
     /// 超过该距离则不与该单位组队
@@ -80,20 +68,16 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// </summary>
     public float Diameter{
         get { return diameter;}
-        set { diameter = value < 0 ? 1 : value; }
+        set {
+            diameter = value < 0 ? 1 : value;
+            // 质量 = 直径平方
+            physicsInfo.Quality = diameter*diameter;
+        }
     }
 
-
-
-    public bool CouldObstruct{
-        get { return couldObstruct; }
-        set { couldObstruct = value; }
-    }
-
-
-    public Vector3 TargetPos{
+    public Vector3 TargetPos {
         get { return targetPos; }
-        set{
+        set {
             // TODO 切换当前状态
             targetPos = value;
         }
@@ -107,11 +91,11 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     //public float Momentum;
 
     /// <summary>
-    /// 组队ID, 只读
+    /// 组队ID
     /// </summary>
-    public int GroupId{
+    public int GroupId {
         get { return groupId; }
-        set{
+        set {
             // 判断是否已有group, 如果有并且ID不同, 则删除原有group中的member
             if (value != groupId){
                 if (group != null){
@@ -157,7 +141,7 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// 当前位置引用
     /// 读取与设置的为GameObject的localPosition
     /// </summary>
-    public Vector3 Position{
+    public Vector3 Position {
         get { return this.transform.localPosition; }
         set { this.transform.localPosition = value; }
     }
@@ -165,25 +149,25 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// <summary>
     /// 设置旋转值
     /// </summary>
-    public Vector3 Rotate{
+    public Vector3 Rotate {
         set { this.transform.Rotate(value); }
     }
 
     /// <summary>
     /// 返回当前单位的正前向量
     /// </summary>
-    public Vector3 Direction{
+    public Vector3 Direction {
         get { return this.transform.forward; }
     }
 
-    public Vector3 DirectionRight{
+    public Vector3 DirectionRight {
         get { return this.transform.right; }
     }
 
     /// <summary>
     /// 当前对象的gameobject的引用
     /// </summary>
-    public GameObject ItemObj{
+    public GameObject ItemObj {
         get { return this.gameObject; }
     }
 
@@ -202,6 +186,9 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// 不是所有对象都会掉用该回调, 只有到达终点的会调用
     /// </summary>
     public Action<GameObject> Complete { get; set; }
+
+
+    // -------------------------私有属性-------------------------
 
 
     /// <summary>
@@ -287,22 +274,6 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
     /// <returns>方形图形</returns>
     public Rectangle GetGraphical()
     {
-        //var halfDiameter = Diameter * 0.5f;
-        //var x = transform.localPosition.x - halfDiameter;
-        //var y = transform.localPosition.z - halfDiameter;
-        //var offsetX = hisX - x;
-        //var offsetY = hisY - y;
-        //// 值有变更时重新创建Rect
-        //if (hisDiameter != diameter || offsetX > Utils.ApproachZero || offsetX < Utils.ApproachKZero ||
-        //    offsetY > Utils.ApproachZero || offsetY < Utils.ApproachKZero || hisRectangle == null)
-        //{
-        //    hisX = x;
-        //    hisY = y;
-        //    hisDiameter = diameter;
-        //    hisRectangle = new Rectangle(hisX, hisY, diameter, diameter);
-        //}
-        //return hisRectangle;
-
         //值有变更时重新创建Rect
         var halfDiameter = Diameter * 0.5f;
         var x = transform.localPosition.x - halfDiameter;
@@ -317,13 +288,10 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
             hisX = x;
             hisY = y;
             hisDiameter = diameter;
-            if (hisRectangle == null)
-            {
+            if (hisRectangle == null){
                 //Debug.Log("1");
                 hisRectangle = new Rectangle(x, y, diameter, diameter);
-            }
-            else
-            {
+            }else{
                 hisRectangle.X = x;
                 hisRectangle.Y = y;
                 hisRectangle.Width = diameter;
@@ -333,19 +301,13 @@ public class SchoolBehaviour : MonoBehaviour, IGraphical<Rectangle>
         return hisRectangle;
     }
 
-    public SchoolBehaviour(int groupId)
-    {
-        this.GroupId = groupId;
-    }
 
-    public void Start()
-    {
+    public void Start() {
         // 将自己存入队员列表
         //Group.MemberList.Add(this);
     }
 
-    public void Destory()
-    {
+    public void Destory() {
         // 销毁时从列表中消除当前队员
         Group.MemberList.Remove(this);
     }
@@ -370,20 +332,16 @@ public class SchoolGroup
     /// 目标位置
     /// 设置目标的同时 所有成员状态会重置为未开始
     /// </summary>
-    public Vector3 Target
-    {
+    public Vector3 Target {
         get {
-            if (MemberList != null || MemberList.Count > 0)
-            {
+            if (MemberList != null || MemberList.Count > 0) {
                 return MemberList[0].TargetPos;
             }
             return Vector3.zero;
         }
-        set
-        {
+        set {
             // 一旦变更, 虽有所属成员状态全部变成Unstart
-            foreach (var member in MemberList)
-            {
+            foreach (var member in MemberList) {
                 member.State = SchoolItemState.Unstart;
                 member.TargetPos = value;
             }
@@ -417,8 +375,7 @@ public class SchoolGroup
     /// 创建group时给予ID
     /// </summary>
     /// <param name="groupId"></param>
-    public SchoolGroup(int groupId)
-    {
+    public SchoolGroup(int groupId) {
         GroupId = groupId;
     }
 
@@ -428,14 +385,11 @@ public class SchoolGroup
     /// </summary>
     public int ProportionOfComplete {
         get { return proportionOfComplete; }
-        set
-        {
+        set {
             // 非法值
-            if (value < 0 || value > 100)
-            {
+            if (value < 0 || value > 100) {
                 proportionOfComplete = 20;
             }
-
             proportionOfComplete = value;
         }
     }
@@ -444,9 +398,6 @@ public class SchoolGroup
     /// 组队到达
     /// </summary>
     public Action<SchoolGroup> Complete;
-
-
-
 
 
     /// <summary>
@@ -474,12 +425,9 @@ public class SchoolGroup
     /// <summary>
     /// 清除队伍信息
     /// </summary>
-    public void CleanGroup()
-    {
+    public void CleanGroup() {
         // 清除所有从属单位
-
-        foreach (var member in MemberList)
-        {
+        foreach (var member in MemberList) {
             GameObject.Destroy(member.gameObject);
         }
         MemberList.Clear();
