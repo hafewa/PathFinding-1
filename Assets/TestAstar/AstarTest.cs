@@ -84,27 +84,33 @@ public class AstarTest : MonoBehaviour {
     /// 创建集群个数
     /// </summary>
     public int ItemCount = 10;
+
+    /// <summary>
+    /// 集群引用
+    /// </summary>
+    public SchoolManager schoolManager;
     
 
     void Start () {
-        // 构建地图
-	    //var map = RandomMap(MapWidth, MapWidth);
 
-        //var path = SearchRoad(map, 0, 0, MapWidth - 1, MapWidth - 1, Diameter);
-
-	    //init(map);
-
-        //StartCoroutine(Step(path));
-
+        // 设定帧数
         Application.targetFrameRate = 60;
-
-	    main = GameObject.Find("Main Camera");
-
-
+        main = GameObject.Find("Main Camera");
+        schoolManager.Init(-MapWidth / 2, -MapHeight / 2, MapWidth, MapHeight, 10, null);
     }
 
     void Update()
     {
+        // 控制
+        Control();
+    }
+
+    /// <summary>
+    /// 控制
+    /// </summary>
+    private void Control()
+    {
+
         if (Input.GetMouseButtonDown(0))
         {
 
@@ -125,12 +131,12 @@ public class AstarTest : MonoBehaviour {
                 TargetY = MapHeight - 1;
             }
             var path = AStarPathFinding.SearchRoad(mapInfoData, StartX, StartY, TargetX, TargetY, DiameterX, DiameterY, IsJumpPoint);
-           
+
             init(mapInfoData);
             StartCoroutine(Step(path));
             // 根据path放地标, 使用组队寻路跟随过去
 
-            StartMoving(path);
+            StartMoving(path, mapInfoData);
         }
 
         if (Input.GetKey(KeyCode.UpArrow))
@@ -157,7 +163,6 @@ public class AstarTest : MonoBehaviour {
         {
             main.transform.localPosition = new Vector3(main.transform.localPosition.x, main.transform.localPosition.y - 1, main.transform.localPosition.z);
         }
-
     }
 
     /// <summary>
@@ -167,28 +172,7 @@ public class AstarTest : MonoBehaviour {
     void init(int[][] map)
     {
         LoadMap.Init(map);
-
-
-        //var cube = GameObject.Find("Cube");
-        //var cubeFather = GameObject.Find("cubeFather");
-        //Destroy(cubeFather);
-        //cubeFather = new GameObject("cubeFather");
-        //按照map数组生成地图
-        //for (var row = 0; row < map.Length; row++)
-        //{
-        //    var rowObj = map[row];
-        //    for (var col = 0; col < rowObj.Length; col++)
-        //    {
-        //        var cell = rowObj[col];
-        //        if (cell == Obstacle)
-        //        {
-        //            var ObstacleObj = Instantiate(cube);
-        //            ObstacleObj.transform.parent = cubeFather.transform;
-        //            //Debug.Log("X:" + col + " Y:" + row);
-        //            ObstacleObj.transform.localPosition = new Vector3((float)(0 + col * 1), 0, (float)(0 - row * 1));
-        //        }
-        //    }
-        //}
+        schoolManager.Init(-MapWidth / 2, -MapHeight / 2, MapWidth, MapHeight, 10, map);
     }
     
     /// <summary>
@@ -260,7 +244,6 @@ public class AstarTest : MonoBehaviour {
         {
             return null;
         }
-        //var mapData = new List<List<int>>();
         // 读出数据
         var mapLines = mapInfoJson.Split('\n');
 
@@ -293,11 +276,12 @@ public class AstarTest : MonoBehaviour {
     /// 集群功能
     /// 组建集群开始根据路径点移动
     /// </summary>
-    /// <param name="pathList"></param>
-    private void StartMoving(IList<Node> pathList)
+    /// <param name="pathList">列表</param>
+    /// <param name="map">地图信息</param>
+    private void StartMoving(IList<Node> pathList, int[][] map)
     {
         // 清除所有组
-        SchoolManager.ClearAll();
+        schoolManager.ClearAll();
         GameObject schoolItem = null;
         SchoolBehaviour school = null;
         var cloneList = new List<Node>(pathList);
@@ -308,18 +292,41 @@ public class AstarTest : MonoBehaviour {
             schoolItem = GameObject.CreatePrimitive(PrimitiveType.Cube);
             school = schoolItem.AddComponent<SchoolBehaviour>();
             school.GroupId = i > 10 ? 2 : 1;
-            school.Speed = 10;
+            school.PhysicsInfo.MaxSpeed = 10;
             school.RotateSpeed = 1;
             school.RotateWeight = 1;
             school.transform.localPosition = new Vector3((i % 3) * 2, 1, i / 3 * 2);
             school.name = "item" + i;
             school.TargetPos = target;
-            school.Diameter = 4;
+            school.Diameter = i == 0 ? 5 : 2;
             //school.Moveing = (a) => { Debug.Log(a.name + "Moving");};
 
             //school.Wait = (a) => { Debug.Log(a.name + "Wait"); };
             //school.Complete = (a) => { Debug.Log(a.name + "Complete"); };
-            SchoolManager.MemberList.Add(school);
+
+            schoolManager.Add(school);
+        }
+
+        GameObject fixItem = null;
+        FixtureBehaviour fix = null;
+
+        // 遍历地图将障碍物加入列表
+        for (var i = 0; i < map.Length; i++)
+        {
+            var row = map[i];
+            for (int j = 0; j < row.Length; j++)
+            {
+                switch (row[j])
+                {
+                    case Utils.Obstacle:
+                        fixItem = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                        fix = fixItem.AddComponent<FixtureBehaviour>();
+                        fix.transform.localScale = new Vector3(UnitWidth, UnitWidth, UnitWidth);
+                        fix.transform.position = Utils.NumToPosition(transform.position, new Vector2(j, i), UnitWidth, MapWidth, MapHeight);
+                        schoolManager.Add(fix);
+                        break;
+                }
+            }
         }
 
         // TODO 将障碍物加入列表

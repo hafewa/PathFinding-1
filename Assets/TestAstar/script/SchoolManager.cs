@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using DG.Tweening;
 using UnityEngine;
@@ -42,47 +43,62 @@ public class SchoolManager : MonoBehaviour
     /// </summary>
     public static List<SchoolGroup> GroupList = new List<SchoolGroup>();
 
+
     /// <summary>
-    /// 成员列表(全局)
+    /// 极限速度
     /// </summary>
-    public static List<SchoolBehaviour> MemberList = new List<SchoolBehaviour>();
+    private float upTopSpeed = 100f;
+
+    /// <summary>
+    /// 目标列表
+    /// </summary>
+    private TargetList<PositionObject> targetList; 
+
 
     /// <summary>
     /// 已对比碰撞对象ID的列表
     /// </summary>
     private Dictionary<long, bool> areadyCollisionList = new Dictionary<long, bool>();  
 
-    /// <summary>
-    /// 四叉树对象
-    /// </summary>
-    private QuadTree<SchoolBehaviour> quadTree; 
 
     public void Start()
     {
-        // 初始化四叉树
-        quadTree = new QuadTree<SchoolBehaviour>(0, new Rectangle(MovementPlanePosition.x - MovementWidth * 0.5f, MovementPlanePosition.z - MovementHeight * 0.5f, MovementWidth, MovementHeight));
+
     }
 
     public void Update()
     {
         // 将所有单位放入四叉树
-        quadTree.Insert(MemberList);
-
+        targetList.RebuildQuadTree();
         // 单位移动
-        MemberMove(MemberList);
+        AllMemberMove(targetList.List);
         // 绘制四叉树
-        DrawQuadTreeLine(quadTree);
+        DrawQuadTreeLine(targetList.QuadTree);
+    }
 
-        // 清空四叉树
-        quadTree.Clear();
 
+
+    /// <summary>
+    /// 加入单位
+    /// </summary>
+    /// <param name="member">单位</param>
+    public void Add(PositionObject member)
+    {
+        targetList.Add(member);
+    }
+
+    public void Init(float x, float y, int w, int h, int unitw, int[][] map)
+    {
+        targetList = new TargetList<PositionObject>(x, y, w, h);
+        targetList.MapInfo = new MapInfo<PositionObject>();
+        targetList.MapInfo.AddMap(unitw, w, h, map);
     }
 
     /// <summary>
     /// 所有成员判断组队行进与碰撞
     /// </summary>
     /// <param name="memberList">成员列表</param>
-    private void MemberMove(List<SchoolBehaviour> memberList)
+    private void AllMemberMove(IList<PositionObject> memberList)
     {
         // 验证数据有效性
         if (memberList == null || memberList.Count == 0)
@@ -95,59 +111,80 @@ public class SchoolManager : MonoBehaviour
         {
             // 当前成员
             var member = memberList[i];
-            // 当前单位到目标的方向
-            Vector3 targetDir = member.TargetPos - member.Position;
-            // 转向角度
-            float rotate = 0f;
-            // 标准化目标方向
-            Vector3 normalizedTargetDir = targetDir.normalized;
-            // 计算后最终方向
-            var finalDir = GetGroupGtivity(member, cosForwardAngle);
-            // 当前方向与目标方向夹角
-            var angleForTarget = Vector3.Dot(normalizedTargetDir, member.Direction);
-            // TODO 左右绕开
-            // 当前单位位置减去周围单位的位置的和, 与最终方向相加, 这个向量做处理, 只能指向目标方向的左右90°之内, 防止调头
-            // 获取周围成员(不论敌友, 包括障碍物)的斥力引力
-            //finalDir += aroundDir.normalized;
-            // 直线移动防止抖动
-            if (angleForTarget < 0.999f)
+            if (member is SchoolBehaviour)
             {
-                // 计算转向
-                rotate = Vector3.Dot(finalDir.normalized, member.DirectionRight) * 180;
-                if (rotate > 180 || rotate < -180)
-                {
-                    rotate += ((int)rotate / 180) * 180 * (Mathf.Sign(rotate));
-                }
+                OneMemberMove(member as SchoolBehaviour, cosForwardAngle);
             }
-
-            // 目标没有在前方 则停止并转向目标到前方角度内
-            //if (angleForTarget < cosForwardAngle)
-            //{
-            //    member.PhysicsInfo.SpeedDirection *= 0f;
-            //    // 切换等待状态
-            //}
-            //else
-            //{
-            //    // 角度越小速度约接近原始速度
-            //    member.PhysicsInfo.SpeedDirection *= angleForTarget;
-            //    // 切换行进状态
-            //}
-
-
-            // 转向
-            member.Rotate = Vector3.up * rotate * member.RotateSpeed * Time.deltaTime;
-            // 前进
-            // TODO speed 用作引力产生系数用
-            member.Position += member.PhysicsInfo.SpeedDirection * Time.deltaTime;
-
-            GetCloseMemberGrivity(member);
-
-            // 速度消耗, 百分比衰减
-            member.PhysicsInfo.SpeedDirection *= 0.95f;
+            else if (member is FixtureBehaviour)
+            {
+                // 不移动
+                // TODO 是否对周围产生斥力?
+            }
         }
 
         // 清空对比列表
         areadyCollisionList.Clear();
+    }
+
+    /// <summary>
+    /// 可移动单位移动
+    /// </summary>
+    /// <param name="member">单个单位</param>
+    /// <param name="cosForwardAngle">前方角度</param>
+    private void OneMemberMove(SchoolBehaviour member, float cosForwardAngle)
+    {
+
+        // 当前单位到目标的方向
+        Vector3 targetDir = member.TargetPos - member.Position;
+        // 转向角度
+        float rotate = 0f;
+        // 标准化目标方向
+        Vector3 normalizedTargetDir = targetDir.normalized;
+        // 计算后最终方向
+        var finalDir = GetGroupGtivity(member, cosForwardAngle);
+        // 当前方向与目标方向夹角
+        var angleForTarget = Vector3.Dot(normalizedTargetDir, member.Direction);
+        // TODO 左右绕开
+        // 当前单位位置减去周围单位的位置的和, 与最终方向相加, 这个向量做处理, 只能指向目标方向的左右90°之内, 防止调头
+        // 获取周围成员(不论敌友, 包括障碍物)的斥力引力
+        //finalDir += aroundDir.normalized;
+        // 直线移动防止抖动
+        if (angleForTarget < 0.999f)
+        {
+            // 计算转向
+            rotate = Vector3.Dot(finalDir.normalized, member.DirectionRight) * 180;
+            if (rotate > 180 || rotate < -180)
+            {
+                rotate += ((int)rotate / 180) * 180 * (Mathf.Sign(rotate));
+            }
+        }
+
+        // 目标没有在前方 则停止并转向目标到前方角度内
+        //if (angleForTarget < cosForwardAngle)
+        //{
+        //    member.PhysicsInfo.SpeedDirection *= 0f;
+        //    // 切换等待状态
+        //}
+        //else
+        //{
+        //    // 角度越小速度约接近原始速度
+        //    member.PhysicsInfo.SpeedDirection *= angleForTarget;
+        //    // 切换行进状态
+        //}
+
+
+        // 转向
+        member.Rotate = Vector3.up * rotate * member.RotateSpeed * Time.deltaTime;
+        // 前进
+        // TODO speed 用作引力产生系数用
+        member.Position += member.PhysicsInfo.SpeedDirection * Time.deltaTime;
+        GetCloseMemberGrivity(member);
+        // TODO 最大速度限制, 方式有待确认
+        var speed = member.PhysicsInfo.SpeedDirection.magnitude;
+        if (speed > member.PhysicsInfo.MaxSpeed)
+        {
+            member.PhysicsInfo.SpeedDirection *= member.PhysicsInfo.MaxSpeed/speed;
+        }
     }
 
     /// <summary>
@@ -216,12 +253,11 @@ public class SchoolManager : MonoBehaviour
 
             Debug.DrawLine(member.Position, grivity + member.Position);
             // 操作动量, 产生前进动量, 这个动量不会超过引力方向最大速度
-            member.PhysicsInfo.SpeedDirection += grivity.normalized * member.Speed * CollisionWeight * Time.deltaTime;
+            // TODO 速度不稳定问题
+            member.PhysicsInfo.SpeedDirection += grivity.normalized * member.PhysicsInfo.MaxSpeed * CollisionWeight * Time.deltaTime;
+
             // 加入最大速度限制, 防止溢出
-            if (member.PhysicsInfo.SpeedDirection.magnitude > 100)
-            {
-                member.PhysicsInfo.SpeedDirection *= 100 / member.PhysicsInfo.SpeedDirection.magnitude;
-            }
+            member.PhysicsInfo.SpeedDirection *= GetUpTopSpeed(member.PhysicsInfo.SpeedDirection.magnitude);
             result = grivity;
         }
 
@@ -240,12 +276,12 @@ public class SchoolManager : MonoBehaviour
             return;
         }
         // 遍历附近单位(不论敌友), 检测碰撞并排除碰撞, (挤开效果), 列表中包含障碍物
-        var closeMemberList = quadTree.Retrieve(member.GetGraphical());
+        var closeMemberList = targetList.QuadTree.Retrieve(member.GetGraphical());
         var rect = member.GetGraphical();
         // 释放压力方向
-        var pressureReleaseDir = Vector3.zero;
+        //var pressureReleaseDir = Vector3.zero;
         // 是否需要躲避
-        //var collisionCount = 0;
+        var collisionCount = 0;
         for (var k = 0; k < closeMemberList.Count; k++)
         {
             var closeMember = closeMemberList[k];
@@ -256,7 +292,7 @@ public class SchoolManager : MonoBehaviour
             // TODO 绕开周围人员(向能够释放压力的方向移动, 如果没有则不动)
             // 计算周围人员的位置, 相对位置的倒数相加, 并且不往来时方向移动
             var diffPosition = member.Position - closeMember.Position;
-            pressureReleaseDir -= diffPosition;
+            //pressureReleaseDir -= diffPosition;
             // 判断两对象是否以计算过, 如果计算过不再计算
             var compereId1 = member.Id + closeMember.Id << 32;
             var compereId2 = closeMember.Id + member.Id << 32;
@@ -266,58 +302,75 @@ public class SchoolManager : MonoBehaviour
                 var closeRect = closeMember.GetGraphical();
                 if (rect.IsCollision(closeRect))
                 {
-                    //collisionCount++;
+                    collisionCount++;
                     var minDistance = member.Diameter + closeMember.Diameter;
-                    var relativeSpeed = closeMember.PhysicsInfo.SpeedDirection - member.PhysicsInfo.SpeedDirection;
-                    // 质量比例
-                    var qualityRate = member.PhysicsInfo.Quality * member.PhysicsInfo.Quality / (closeMember.PhysicsInfo.Quality * closeMember.PhysicsInfo.Quality);
-                    // 速度的传递经过质量相关的动量计算
-                    var departSpeed = relativeSpeed;
-                    // 碰撞能量限制
-                    if (departSpeed.magnitude > relativeSpeed.magnitude)
-                    {
-                        departSpeed *= relativeSpeed.magnitude / departSpeed.magnitude;
-                    }
+
+                    var departSpeed = closeMember.PhysicsInfo.SpeedDirection - member.PhysicsInfo.SpeedDirection;
+
                     // 基础排斥力
                     if (diffPosition.magnitude < minDistance)
                     {
-                        // TODO 改成转向, 向障碍少的方向前进(不后退)
-                        departSpeed += diffPosition * minDistance / diffPosition.magnitude;
+                        // TODO 直接控制位置
+                        member.Position += diffPosition.normalized*(minDistance - diffPosition.magnitude) * 6 * Time.deltaTime;
+                        // 控制附近的单位的位置
+                        // member.Position = GetCollisionPosition(closeRect, rect);
                     }
-                    
+
+                    // 质量比例
+                    var qualityRate = member.PhysicsInfo.Quality * member.PhysicsInfo.Quality / (closeMember.PhysicsInfo.Quality * closeMember.PhysicsInfo.Quality);
                     // 碰撞量比例
-                    departSpeed *= CollisionEnergyRate;
+                    //departSpeed *= member.PhysicsInfo.MaxSpeed;
                     member.PhysicsInfo.SpeedDirection += departSpeed / qualityRate;
                     closeMember.PhysicsInfo.SpeedDirection -= departSpeed * qualityRate;
-
                     // 加入最大速度限制, 防止溢出
-                    if (member.PhysicsInfo.SpeedDirection.magnitude > 100)
-                    {
-                        member.PhysicsInfo.SpeedDirection *= 100 / member.PhysicsInfo.SpeedDirection.magnitude;
-                    }
+                    member.PhysicsInfo.SpeedDirection *= GetUpTopSpeed(member.PhysicsInfo.SpeedDirection.magnitude);
+                    closeMember.PhysicsInfo.SpeedDirection *= GetUpTopSpeed(closeMember.PhysicsInfo.SpeedDirection.magnitude);
                     // 加入已对比列表
                     areadyCollisionList.Add(compereId1, true);
                 }
             }
         }
+        // TODO 引力方向是附近的空格子
+
         // 判断是否需要躲避
         //if (collisionCount > 1)
         //{
+        //    // 获取周围的格子
+        //    var aroundNodes = targetList.MapInfo.GetAroundPos(member, 2);
+
+
+
+        //    // 向最近的, 目标大方向的空格子前进
+
         //    // 将躲避力加入
         //    // 求躲避方向
-        //    var avoidDir = Vector3.Cross(pressureReleaseDir, Vector3.up);
-        //    if (Vector3.Dot(member.Direction, avoidDir) > 0)
-        //    {
-        //        member.PhysicsInfo.SpeedDirection += avoidDir;
-        //    }
-        //    else
-        //    {
-        //        member.PhysicsInfo.SpeedDirection -= avoidDir;
-        //    }
+        //    //var avoidDir = Vector3.Cross(pressureReleaseDir, Vector3.up);
+        //    //if (Vector3.Dot(member.Direction, avoidDir) > 0)
+        //    //{
+        //    //    member.PhysicsInfo.SpeedDirection += avoidDir;
+        //    //}
+        //    //else
+        //    //{
+        //    //    member.PhysicsInfo.SpeedDirection -= avoidDir;
+        //    //}
         //}
     }
 
 
+    /// <summary>
+    /// 控制极限速度
+    /// </summary>
+    /// <param name="speed">当前速度</param>
+    /// <returns>如果speed超过极限速度则将其置为极限速度系数</returns>
+    private float GetUpTopSpeed(float speed)
+    {
+        var result = 1f;
+        if (speed > upTopSpeed)
+        {
+            result = upTopSpeed / speed;
+        }
+        return result;
+    }
 
 
     /// <summary>
@@ -333,7 +386,7 @@ public class SchoolManager : MonoBehaviour
         foreach (var item in argQuadTree.GetItemList())
         {
             // 绘制当前对象
-            DrawRect(item.GetGraphical(), Color.red);
+            DrawRect(item.GetGraphical(), Color.white);
         }
 
         if (argQuadTree.GetSubNodes()[0] != null)
@@ -344,7 +397,6 @@ public class SchoolManager : MonoBehaviour
             }
         }
     }
-
 
 
     /// <summary>
@@ -647,8 +699,7 @@ public class SchoolManager : MonoBehaviour
     /// <summary>
     /// 清除所有组
     /// </summary>
-    public static void ClearAll()
-    {
+    public void ClearAll(){
         // 清除已有所有单元
         foreach (var group in GroupList)
         {
@@ -656,7 +707,7 @@ public class SchoolManager : MonoBehaviour
         }
 
         GroupList.Clear();
-        MemberList.Clear();
+        targetList.List.Clear();
     }
 
     /// <summary>

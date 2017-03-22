@@ -64,7 +64,7 @@ public class TargetSelecter
 /// 目标列表
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class TargetList<T> where T : IGraphical<Rectangle>
+public class TargetList<T> where T : PositionObject
 {
     /// <summary>
     /// 返回全引用列表
@@ -74,18 +74,33 @@ public class TargetList<T> where T : IGraphical<Rectangle>
     /// <summary>
     /// 返回四叉树列表
     /// </summary>
-    public QuadTree<T> QuadTree { get { return quadTree; } } 
+    public QuadTree<T> QuadTree { get { return quadTree; } }
+
+    /// <summary>
+    /// 地图信息
+    /// </summary>
+    public MapInfo<T> MapInfo
+    {
+        get { return mapinfo; }
+        set { mapinfo = value; }
+    }
 
 
     /// <summary>
     /// 目标总列表
     /// </summary>
-    private List<T> list = null;
+    private IList<T> list = null;
 
     /// <summary>
     /// 四叉树
     /// </summary>
     private QuadTree<T> quadTree = null;
+
+    /// <summary>
+    /// 地图信息
+    /// </summary>
+    private MapInfo<T> mapinfo = null;
+    
 
     /// <summary>
     /// 创建目标列表
@@ -117,7 +132,6 @@ public class TargetList<T> where T : IGraphical<Rectangle>
         // 加入四叉树
         quadTree.Insert(t);
     }
-
     /// <summary>
     /// 根据范围获取对象
     /// </summary>
@@ -138,6 +152,16 @@ public class TargetList<T> where T : IGraphical<Rectangle>
         quadTree.Clear();
         quadTree.Insert(list);
     }
+
+
+    public void RebulidMapInfo()
+    {
+        if (mapinfo != null)
+        {
+            mapinfo.RebuildMapInfo(list);
+        }
+    }
+
 }
 
 /// <summary>

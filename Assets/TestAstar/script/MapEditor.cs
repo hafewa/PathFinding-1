@@ -91,7 +91,7 @@ public class MapEditor : MonoBehaviour {
     /// <summary>
     /// 地图状态
     /// </summary>
-    private Dictionary<string, GameObject> mapStateDic = new Dictionary<string, GameObject>(); 
+    private Dictionary<long, GameObject> mapStateDic = new Dictionary<long, GameObject>(); 
 
 
     //-------------------计算优化属性---------------------
@@ -306,12 +306,12 @@ public class MapEditor : MonoBehaviour {
     /// </summary>
     private void RefreshMap()
     {
-        for (var row = 0; row < map.Length; row++)
+        for (long row = 0; row < map.Length; row++)
         {
             var oneRow = map[row];
-            for (var col = 0; col < oneRow.Length; col++)
+            for (long col = 0; col < oneRow.Length; col++)
             {
-                var key = String.Format("{0}:{1}", col, row);
+                var key = (row << 32) + col;
                 switch (oneRow[col])
                 {
                     case Utils.Obstacle:
@@ -336,7 +336,6 @@ public class MapEditor : MonoBehaviour {
                                 mapStateDic[key] = null;
                             }
                         }
-
                         break;
                 }
             }

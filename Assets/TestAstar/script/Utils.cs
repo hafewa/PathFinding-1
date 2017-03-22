@@ -30,6 +30,10 @@ public class Utils
     /// </summary>
     private static Utils single;
 
+    /// <summary>
+    /// 队员
+    /// </summary>
+    public const int Member = 2;
 
     /// <summary>
     /// 障碍物

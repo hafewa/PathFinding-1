@@ -318,37 +318,3 @@ public class AStarPathFinding
     }
 
 }
-
-/// <summary>
-/// 地图节点
-/// </summary>
-public class Node : IComparable<Node>
-{
-    public Node(int x, int y, int g = 0, int h = 0)
-    {
-        X = x;
-        Y = y;
-        G = g;
-        H = h;
-    }
-
-    public int X { get; set; }
-    public int Y { get; set; }
-    public int G { get; set; }
-    public int H { get; set; }
-    public int F { get; set; }
-    public Node Parent { get; set; }
-
-    public override string ToString()
-    {
-        return string.Format("x:{0},y:{1},g:{2},h:{3},f:{4}", X, Y, G, H, F);
-    }
-    public int CompareTo(Node node)
-    {
-        if (node.F > F)
-        {
-            return -1;
-        }
-        return node.F < F ? 1 : 0;
-    }
-}

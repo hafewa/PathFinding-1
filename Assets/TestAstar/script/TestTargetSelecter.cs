@@ -306,7 +306,7 @@ public class TestTargetSelecter : MonoBehaviour {
 /// <summary>
 /// 单位数据
 /// </summary>
-public class Member :  ISelectWeightData, BaseMamber, IGraphical<Rectangle>
+public class Member : PositionObject, ISelectWeightData, BaseMamber, IGraphical<Rectangle>
 {
 
 
