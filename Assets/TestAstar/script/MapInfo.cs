@@ -57,6 +57,8 @@ public class MapInfo<T> where T : PositionObject
     {
         this.map = map;
         this.unitWidth = unitw;
+        mapWidth = width;
+        mapHeight = height;
     }
 
 

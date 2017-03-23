@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using DG.Tweening;
 using UnityEngine;
+using Random = System.Random;
 
 /// <summary>
 /// 集群管理
@@ -33,10 +34,10 @@ public class SchoolManager : MonoBehaviour
     /// </summary>
     public float CollisionWeight = 1f;
 
-    /// <summary>
-    /// 碰撞能量损失
-    /// </summary>
-    public float CollisionEnergyRate = 0.5f;
+    ///// <summary>
+    ///// 碰撞挤开系数
+    ///// </summary>
+    public float CollisionThrough = 5f;
 
     /// <summary>
     /// 组列表(全局)
@@ -68,8 +69,10 @@ public class SchoolManager : MonoBehaviour
 
     public void Update()
     {
-        // 将所有单位放入四叉树
+        // 刷新四叉树
         targetList.RebuildQuadTree();
+        // 刷新地图对应位置
+        targetList.RebulidMapInfo();
         // 单位移动
         AllMemberMove(targetList.List);
         // 绘制四叉树
@@ -250,7 +253,7 @@ public class SchoolManager : MonoBehaviour
             //{
             //    member.PhysicsInfo.Speed = member.PhysicsInfo.MaxSpeed;
             //}
-
+            // 绘制目标
             Debug.DrawLine(member.Position, grivity + member.Position);
             // 操作动量, 产生前进动量, 这个动量不会超过引力方向最大速度
             // TODO 速度不稳定问题
@@ -278,8 +281,10 @@ public class SchoolManager : MonoBehaviour
         // 遍历附近单位(不论敌友), 检测碰撞并排除碰撞, (挤开效果), 列表中包含障碍物
         var closeMemberList = targetList.QuadTree.Retrieve(member.GetGraphical());
         var rect = member.GetGraphical();
+        // 目标方向
+        var targetDir = member.TargetPos - member.Position;
         // 释放压力方向
-        //var pressureReleaseDir = Vector3.zero;
+        var pressureReleaseDir = Vector3.zero;
         // 是否需要躲避
         var collisionCount = 0;
         for (var k = 0; k < closeMemberList.Count; k++)
@@ -289,10 +294,10 @@ public class SchoolManager : MonoBehaviour
             {
                 continue;
             }
-            // TODO 绕开周围人员(向能够释放压力的方向移动, 如果没有则不动)
+
             // 计算周围人员的位置, 相对位置的倒数相加, 并且不往来时方向移动
             var diffPosition = member.Position - closeMember.Position;
-            //pressureReleaseDir -= diffPosition;
+            pressureReleaseDir -= diffPosition;
             // 判断两对象是否以计算过, 如果计算过不再计算
             var compereId1 = member.Id + closeMember.Id << 32;
             var compereId2 = closeMember.Id + member.Id << 32;
@@ -302,7 +307,12 @@ public class SchoolManager : MonoBehaviour
                 var closeRect = closeMember.GetGraphical();
                 if (rect.IsCollision(closeRect))
                 {
-                    collisionCount++;
+                    // 如果碰撞来自前方, 则增加
+                    if (Vector3.Angle(targetDir, -diffPosition) < 90)
+                    {
+                        collisionCount++;
+                    }
+
                     var minDistance = member.Diameter + closeMember.Diameter;
 
                     var departSpeed = closeMember.PhysicsInfo.SpeedDirection - member.PhysicsInfo.SpeedDirection;
@@ -310,16 +320,12 @@ public class SchoolManager : MonoBehaviour
                     // 基础排斥力
                     if (diffPosition.magnitude < minDistance)
                     {
-                        // TODO 直接控制位置
-                        member.Position += diffPosition.normalized*(minDistance - diffPosition.magnitude) * 6 * Time.deltaTime;
-                        // 控制附近的单位的位置
-                        // member.Position = GetCollisionPosition(closeRect, rect);
+                        // TODO 不放在这里 直接控制位置
+                        member.Position += diffPosition.normalized * (minDistance - diffPosition.magnitude) * CollisionThrough * Time.deltaTime;
                     }
 
                     // 质量比例
                     var qualityRate = member.PhysicsInfo.Quality * member.PhysicsInfo.Quality / (closeMember.PhysicsInfo.Quality * closeMember.PhysicsInfo.Quality);
-                    // 碰撞量比例
-                    //departSpeed *= member.PhysicsInfo.MaxSpeed;
                     member.PhysicsInfo.SpeedDirection += departSpeed / qualityRate;
                     closeMember.PhysicsInfo.SpeedDirection -= departSpeed * qualityRate;
                     // 加入最大速度限制, 防止溢出
@@ -330,30 +336,19 @@ public class SchoolManager : MonoBehaviour
                 }
             }
         }
-        // TODO 引力方向是附近的空格子
 
         // 判断是否需要躲避
-        //if (collisionCount > 1)
-        //{
-        //    // 获取周围的格子
-        //    var aroundNodes = targetList.MapInfo.GetAroundPos(member, 2);
-
-
-
-        //    // 向最近的, 目标大方向的空格子前进
-
-        //    // 将躲避力加入
-        //    // 求躲避方向
-        //    //var avoidDir = Vector3.Cross(pressureReleaseDir, Vector3.up);
-        //    //if (Vector3.Dot(member.Direction, avoidDir) > 0)
-        //    //{
-        //    //    member.PhysicsInfo.SpeedDirection += avoidDir;
-        //    //}
-        //    //else
-        //    //{
-        //    //    member.PhysicsInfo.SpeedDirection -= avoidDir;
-        //    //}
-        //}
+        if (collisionCount > 1)
+        {
+            // TODO 引力方向是附近的空格子
+            // 获取周围的格子
+            //var aroundNodes = targetList.MapInfo.GetAroundPos(member, 2);
+            // 给予横向拉扯力
+            // 求聚合位置向量的垂直向量
+            var transverseDir = Vector3.Cross(pressureReleaseDir, Vector3.up);
+            // 随机左右
+            member.PhysicsInfo.SpeedDirection += transverseDir * (new Random(DateTime.Now.Second).Next(10) > 5 ? -1 : 1);
+        }
     }
 
 
@@ -402,7 +397,8 @@ public class SchoolManager : MonoBehaviour
     /// <summary>
     /// 绘制矩形
     /// </summary>
-    /// <param name="rectangle"></param>
+    /// <param name="rectangle">被绘制矩形</param>
+    /// <param name="color">绘制颜色</param>
     private void DrawRect(Rectangle rectangle, Color color)
     {
         Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
