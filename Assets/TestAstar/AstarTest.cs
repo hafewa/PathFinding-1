@@ -292,13 +292,13 @@ public class AstarTest : MonoBehaviour {
             schoolItem = GameObject.CreatePrimitive(PrimitiveType.Cube);
             school = schoolItem.AddComponent<SchoolBehaviour>();
             school.GroupId = i > 10 ? 2 : 1;
-            school.PhysicsInfo.MaxSpeed = 10;
+            school.PhysicsInfo.MaxSpeed = i == 0 ? 10 : 5;
             school.RotateSpeed = 1;
             school.RotateWeight = 1;
             school.transform.localPosition = new Vector3((i % 3) * 2, 1, i / 3 * 2);
             school.name = "item" + i;
             school.TargetPos = target;
-            school.Diameter = i == 0 ? 5 : 2;
+            school.Diameter = i == 0 ? 5 : 1;
             //school.Moveing = (a) => { Debug.Log(a.name + "Moving");};
 
             //school.Wait = (a) => { Debug.Log(a.name + "Wait"); };

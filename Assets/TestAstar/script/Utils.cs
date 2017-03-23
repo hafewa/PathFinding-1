@@ -117,7 +117,7 @@ public class Utils
     {
         var x = (int)((position.x - planePosOffset.x + mapWidth * unitWidth / 2) / unitWidth);
         var y = (int)((position.z - planePosOffset.z + mapHight * unitWidth / 2) / unitWidth);
-        if (x > 0)
+        if (x < 0)
         {
             x = 0;
         }
@@ -125,7 +125,7 @@ public class Utils
         {
             x = (int)mapWidth - 1;
         }
-        if (y > 0)
+        if (y < 0)
         {
             y = 0;
         }

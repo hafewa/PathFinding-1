@@ -127,11 +127,11 @@ public class AStarPathFinding
             //Array.Sort(tmpList, (a, b) => a.F - b.F);
             //openList = new Queue<Node>(tmpList);
             // 如果搜索次数大于(w+h) * 4 则停止搜索
-            if (counter > maxSearchCount)
-            {
-                //openList = null;
-                break;
-            }
+            //if (counter > maxSearchCount)
+            //{
+            //    //openList = null;
+            //    break;
+            //}
 
         } while ((endNode = ExistInList(new Node(endX, endY), openList.GetEnumerator())) == null);
         

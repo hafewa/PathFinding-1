@@ -182,6 +182,8 @@ public class SchoolManager : MonoBehaviour
         // TODO speed 用作引力产生系数用
         member.Position += member.PhysicsInfo.SpeedDirection * Time.deltaTime;
         GetCloseMemberGrivity(member);
+        // 速度衰减
+        member.PhysicsInfo.SpeedDirection *= 0.995f;
         // TODO 最大速度限制, 方式有待确认
         var speed = member.PhysicsInfo.SpeedDirection.magnitude;
         if (speed > member.PhysicsInfo.MaxSpeed)
@@ -201,17 +203,13 @@ public class SchoolManager : MonoBehaviour
     {
         var result = Vector3.zero;
         
-        // speed = 0;
         // 同队伍聚合
         if (member != null && member.Group != null)
         {
             var grivity = member.TargetPos - member.Position;
             // 当前单位到目标的方向
             Vector3 targetDir = member.TargetPos - member.Position;
-
-            // speed = member.Speed;
-            // TODO 求出几个聚合点,最近的聚合点对其产生引力(只有前方聚合点会产生引力)
-            // TODO 计算聚合点的操作可以省略掉
+            
             // 遍历同队成员计算方向与速度
             for (var j = 0; j < member.Group.MemberList.Count; j++)
             {
@@ -236,11 +234,9 @@ public class SchoolManager : MonoBehaviour
                     else if (teammateOffset.magnitude <= minDistance)
                     {
                         // 前方90度内有人, 并且距离小于改单位设置的最小间距, 对该方向产生斥力
-                        grivity -= teammateOffset.normalized * member.RotateWeight * (teammateOffset.magnitude / minDistance);
-                        
+                        //grivity -= teammateOffset.normalized * member.RotateWeight * (teammateOffset.magnitude / minDistance);
                     }
                 }
-                // 先删除路径功能
             }
 
             //member.Momentum = member.PhysicsInfo.Momentum;
