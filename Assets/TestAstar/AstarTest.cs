@@ -302,7 +302,7 @@ public class AstarTest : MonoBehaviour {
             school.transform.localPosition = new Vector3((i % 3) * 2, 1, i / 3 * 2);
             school.name = "item" + i;
             school.TargetPos = target;
-            school.Diameter = i == 0 ? 5 : 2;
+            school.Diameter = (i == 0 ? 5 : 2) * UnitWidth;
             //school.Moveing = (a) => { Debug.Log(a.name + "Moving"); };
 
             //school.Wait = (a) => { Debug.Log(a.name + "Wait"); };
@@ -327,13 +327,12 @@ public class AstarTest : MonoBehaviour {
                         fix = fixItem.AddComponent<FixtureBehaviour>();
                         fix.transform.localScale = new Vector3(UnitWidth, UnitWidth, UnitWidth);
                         fix.transform.position = Utils.NumToPosition(transform.position, new Vector2(j, i), UnitWidth, MapWidth, MapHeight);
+                        fix.Diameter = 1*UnitWidth;
                         schoolManager.Add(fix);
                         break;
                 }
             }
         }
-
-        // TODO 将障碍物加入列表
 
         //school.Group.Target = Utils.NumToPosition(LoadMap.transform.position, new Vector2(cloneList[cloneList.Count - 1].X, cloneList[cloneList.Count - 1].Y), UnitWidth, MapWidth, MapHeight); 
         
