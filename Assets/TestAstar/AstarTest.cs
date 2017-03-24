@@ -96,7 +96,8 @@ public class AstarTest : MonoBehaviour {
         // 设定帧数
         Application.targetFrameRate = 60;
         main = GameObject.Find("Main Camera");
-        schoolManager.Init(-MapWidth / 2, -MapHeight / 2, MapWidth, MapHeight, 10, null);
+        var loadMapPos = LoadMap.GetLeftBottom();
+        schoolManager.Init(loadMapPos.x, loadMapPos.z, MapWidth, MapHeight, UnitWidth, null);
     }
 
     void Update()
@@ -136,6 +137,9 @@ public class AstarTest : MonoBehaviour {
             StartCoroutine(Step(path));
             // 根据path放地标, 使用组队寻路跟随过去
 
+            LoadMap.Init(mapInfoData, UnitWidth);
+            var loadMapPos = LoadMap.GetLeftBottom();
+            schoolManager.Init(loadMapPos.x, loadMapPos.z, MapWidth, MapHeight, UnitWidth, mapInfoData);
             StartMoving(path, mapInfoData);
         }
 
@@ -171,7 +175,7 @@ public class AstarTest : MonoBehaviour {
     /// <param name="map">地图数据</param>
     void init(int[][] map)
     {
-        LoadMap.Init(map);
+        LoadMap.Init(map, UnitWidth);
         schoolManager.Init(-MapWidth / 2, -MapHeight / 2, MapWidth, MapHeight, 10, map);
     }
     

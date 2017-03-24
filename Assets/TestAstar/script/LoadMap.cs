@@ -29,10 +29,6 @@ public class LoadMap : MonoBehaviour
     /// </summary>
     public GameObject ObstaclerList;
 
-    /// <summary>
-    /// 单位宽度
-    /// </summary>
-    public int UnitWidth = 1;
 
     /// <summary>
     /// 是否显示
@@ -63,6 +59,10 @@ public class LoadMap : MonoBehaviour
     /// 地图高度(Y)
     /// </summary>
     private int mapHeight = -1;
+    /// <summary>
+    /// 单位宽度
+    /// </summary>
+    private int unitWidth = 1;
 
     /// <summary>
     /// 地图状态
@@ -111,10 +111,11 @@ public class LoadMap : MonoBehaviour
     /// 初始化 将地图数据传入
     /// </summary>
     /// <param name="map">地图数据</param>
-    public IList<GameObject> Init(int[][] map)
+    public IList<GameObject> Init(int[][] map, int unitWidth)
     {
         // 设置本地数据
         mapData = map;
+        this.unitWidth = unitWidth;
 
         // 验证数据
         if (!ValidateData())
@@ -128,8 +129,8 @@ public class LoadMap : MonoBehaviour
         mapWidth = mapData[0].Length;
 
         // 初始化优化数据
-        halfMapWidth = mapWidth / 2.0f * UnitWidth;
-        halfMapHight = mapHeight / 2.0f * UnitWidth;
+        halfMapWidth = mapWidth / 2.0f * this.unitWidth;
+        halfMapHight = mapHeight / 2.0f * this.unitWidth;
 
         // 获得起始点
         Vector3 startPosition = MapPlane.transform.position;
@@ -146,7 +147,7 @@ public class LoadMap : MonoBehaviour
     public Vector3 GetLeftBottom()
     {
         var localPos = transform.localPosition;
-        return new Vector3(localPos.x - mapWidth * UnitWidth * 0.5f, localPos.y, localPos.z - mapHeight * UnitWidth *0.5f);
+        return new Vector3(localPos.x - mapWidth * unitWidth * 0.5f, localPos.y, localPos.z - mapHeight * unitWidth * 0.5f);
     }
 
     /// <summary>
@@ -164,7 +165,7 @@ public class LoadMap : MonoBehaviour
         CleanObstaclerList();
 
         // 缩放地图
-        MapPlane.transform.localScale = new Vector3(mapWidth * UnitWidth, 1, mapHeight * UnitWidth);
+        MapPlane.transform.localScale = new Vector3(mapWidth * unitWidth, 1, mapHeight * unitWidth);
 
         // TODO 不显示逻辑地图障碍物则返回
         //if (!IsShow)
@@ -198,8 +199,8 @@ public class LoadMap : MonoBehaviour
                         {
                             var newObstacler = CreateObstacler();
                             newObstacler.transform.parent = ObstaclerList == null ? null : ObstaclerList.transform;
-                            newObstacler.transform.localScale = new Vector3(UnitWidth, UnitWidth, UnitWidth);
-                            newObstacler.transform.position = Utils.NumToPosition(MapPlane.transform.position, new Vector2(col, row), UnitWidth, mapWidth, mapHeight);
+                            newObstacler.transform.localScale = new Vector3(unitWidth, unitWidth, unitWidth);
+                            newObstacler.transform.position = Utils.NumToPosition(MapPlane.transform.position, new Vector2(col, row), unitWidth, mapWidth, mapHeight);
                             mapStateDic[key] = newObstacler;
                             result.Add(newObstacler);
                         }
@@ -247,11 +248,11 @@ public class LoadMap : MonoBehaviour
 
         for (var i = 1; i <= xCount; i++)
         {
-            Debug.DrawLine(leftup + new Vector3(i * UnitWidth, 0, 0), leftdown + new Vector3(i * UnitWidth, 0, 0), LineColor);
+            Debug.DrawLine(leftup + new Vector3(i * unitWidth, 0, 0), leftdown + new Vector3(i * unitWidth, 0, 0), LineColor);
         }
         for (var i = 1; i <= yCount; i++)
         {
-            Debug.DrawLine(leftdown + new Vector3(0, 0, i * UnitWidth), rightdown + new Vector3(0, 0, i * UnitWidth), LineColor);
+            Debug.DrawLine(leftdown + new Vector3(0, 0, i * unitWidth), rightdown + new Vector3(0, 0, i * unitWidth), LineColor);
         }
     }
 
