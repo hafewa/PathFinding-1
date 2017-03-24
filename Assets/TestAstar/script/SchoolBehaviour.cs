@@ -39,6 +39,9 @@ public class SchoolBehaviour : PositionObject
         set { rotateWeight = value < 0 ? 1 : value; }
     }
 
+    /// <summary>
+    /// 目标位置
+    /// </summary>
     public Vector3 TargetPos {
         get { return targetPos; }
         set {
@@ -108,6 +111,14 @@ public class SchoolBehaviour : PositionObject
     /// </summary>
     public Action<GameObject> Complete { get; set; }
 
+    /// <summary>
+    /// 是否在移动
+    /// </summary>
+    public bool IsMoving
+    {
+        get { return isMoving; }
+    }
+
 
     // -------------------------私有属性-------------------------
 
@@ -161,10 +172,20 @@ public class SchoolBehaviour : PositionObject
     /// </summary>
     private bool couldObstruct = true;
 
+    /// <summary>
+    /// 是否正在移动
+    /// </summary>
+    private bool isMoving = true;
 
-    public void Start() {
-        // 将自己存入队员列表
-        //Group.MemberList.Add(this);
+
+    public void Stop()
+    {
+        isMoving = false;
+    }
+
+    public void ContinueMove()
+    {
+        isMoving = true;
     }
 
     public void Destory() {
@@ -181,6 +202,9 @@ public class SchoolBehaviour : PositionObject
 /// </summary>
 public class SchoolGroup
 {
+    // --------------------------公有属性--------------------------------
+
+
     /// <summary>
     /// 路径宽度
     /// </summary>
@@ -207,6 +231,8 @@ public class SchoolGroup
             }
             //targetPos = value;
             startPos = GroupPos;
+            CompleteMemberCount = 0;
+            IsComplete = false;
         }
     }
 
@@ -255,10 +281,22 @@ public class SchoolGroup
     }
 
     /// <summary>
+    /// 已到达队员数量
+    /// </summary>
+    public int CompleteMemberCount { get; set; }
+
+    /// <summary>
     /// 组队到达
     /// </summary>
-    public Action<SchoolGroup> Complete;
+    public Action<SchoolGroup> Complete { get; set; }
 
+    /// <summary>
+    /// 队伍是否已到达
+    /// </summary>
+    public bool IsComplete { get; set; }
+
+
+    // -----------------------------私有属性-----------------------------
 
     /// <summary>
     /// 达成Complete的百分比
@@ -280,7 +318,7 @@ public class SchoolGroup
     /// 路径宽度
     /// 默认宽度1
     /// </summary>
-    public float pathWeight = 1.5f;
+    private float pathWeight = 1.5f;
 
     /// <summary>
     /// 清除队伍信息

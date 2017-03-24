@@ -100,7 +100,12 @@ public class TargetList<T> where T : PositionObject
     /// 地图信息
     /// </summary>
     private MapInfo<T> mapinfo = null;
-    
+
+    /// <summary>
+    /// 单位格子宽度
+    /// </summary>
+    private int unitWidht;
+
 
     /// <summary>
     /// 创建目标列表
@@ -109,9 +114,10 @@ public class TargetList<T> where T : PositionObject
     /// <param name="y">地图位置y</param>
     /// <param name="width">地图宽度</param>
     /// <param name="height">地图高度</param>
-    public TargetList(float x, float y, int width, int height)
+    public TargetList(float x, float y, int width, int height, int unitWidht)
     {
-        var mapRect = new Rectangle(x, y, width, height);
+        var mapRect = new Rectangle(x, y, width * unitWidht, height * unitWidht);
+        this.unitWidht = unitWidht;
         quadTree = new QuadTree<T>(0, mapRect);
         list = new List<T>();
     }

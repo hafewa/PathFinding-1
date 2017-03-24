@@ -292,14 +292,14 @@ public class AstarTest : MonoBehaviour {
             schoolItem = GameObject.CreatePrimitive(PrimitiveType.Cube);
             school = schoolItem.AddComponent<SchoolBehaviour>();
             school.GroupId = i > 10 ? 2 : 1;
-            school.PhysicsInfo.MaxSpeed = i == 0 ? 10 : 5;
+            school.PhysicsInfo.MaxSpeed = 10;
             school.RotateSpeed = 1;
             school.RotateWeight = 1;
             school.transform.localPosition = new Vector3((i % 3) * 2, 1, i / 3 * 2);
             school.name = "item" + i;
             school.TargetPos = target;
-            school.Diameter = i == 0 ? 5 : 1;
-            //school.Moveing = (a) => { Debug.Log(a.name + "Moving");};
+            school.Diameter = i == 0 ? 5 : 2;
+            //school.Moveing = (a) => { Debug.Log(a.name + "Moving"); };
 
             //school.Wait = (a) => { Debug.Log(a.name + "Wait"); };
             //school.Complete = (a) => { Debug.Log(a.name + "Complete"); };
@@ -336,7 +336,7 @@ public class AstarTest : MonoBehaviour {
 
         Action<SchoolGroup> lambdaComplete = (thisGroup) =>
         {
-            //Debug.Log("GroupComplete:" + thisGroup.Target);
+            // Debug.Log("GroupComplete:" + thisGroup.Target);
             // 数据本地化
             // 数据结束
             if (cloneList.Count == 0)
@@ -349,9 +349,9 @@ public class AstarTest : MonoBehaviour {
                 return;
             }
             var node = cloneList[cloneList.Count - 1];
-            thisGroup.Target = Utils.NumToPosition(LoadMap.transform.position, new Vector2(node.X, node.Y), UnitWidth, MapWidth, MapHeight);
+            //thisGroup.Target = Utils.NumToPosition(LoadMap.transform.position, new Vector2(node.X, node.Y), UnitWidth, MapWidth, MapHeight);
         };
-        school.Group.ProportionOfComplete = 10;
+        school.Group.ProportionOfComplete = 1;
         school.Group.Complete = lambdaComplete;
     }
 

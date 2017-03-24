@@ -49,7 +49,7 @@ public class TestTargetSelecter : MonoBehaviour {
     void Start ()
     {
         // 创建地图目标列表
-        MemberList = new TargetList<Member>(MapPlane.transform.localPosition.x, MapPlane.transform.localPosition.z, MapWidth, MapHeight);
+        MemberList = new TargetList<Member>(MapPlane.transform.localPosition.x, MapPlane.transform.localPosition.z, MapWidth, MapHeight, 1);
 
         CreateAllMember(ItemCount);
 

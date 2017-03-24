@@ -67,7 +67,7 @@ public class LoadMap : MonoBehaviour
     /// <summary>
     /// 地图状态
     /// </summary>
-    private Dictionary<string, GameObject> mapStateDic = new Dictionary<string, GameObject>();
+    private Dictionary<long, GameObject> mapStateDic = new Dictionary<long, GameObject>();
 
 
     //-------------------计算优化属性---------------------
@@ -93,22 +93,25 @@ public class LoadMap : MonoBehaviour
 
     private List<GameObject> ObstaclerArray = new List<GameObject>();
 
-    void Start () {
+    void Start()
+    {
+        IsShow = true;
     }
-	
-	void Update () {
+
+    void Update()
+    {
 
         // 画格子
-	    DrawLine();
+        DrawLine();
 
-	}
+    }
 
 
     /// <summary>
     /// 初始化 将地图数据传入
     /// </summary>
     /// <param name="map">地图数据</param>
-    public void Init(int[][] map)
+    public IList<GameObject> Init(int[][] map)
     {
         // 设置本地数据
         mapData = map;
@@ -117,7 +120,7 @@ public class LoadMap : MonoBehaviour
         if (!ValidateData())
         {
             Debug.LogError("参数错误!");
-            return;
+            return null;
         }
 
         // TODO 初始化地图宽度长度
@@ -137,19 +140,25 @@ public class LoadMap : MonoBehaviour
         rightdown = new Vector3(halfMapWidth + startPosition.x, (MapPlane.transform.localScale.y) / 2 + startPosition.y, -halfMapHight + startPosition.z);
 
         // 刷新地图
-        RefreshMap();
+        return RefreshMap();
+    }
+
+    public Vector3 GetLeftBottom()
+    {
+        var localPos = transform.localPosition;
+        return new Vector3(localPos.x - mapWidth * UnitWidth * 0.5f, localPos.y, localPos.z - mapHeight * UnitWidth *0.5f);
     }
 
     /// <summary>
     /// 刷新地图
     /// </summary>
-    public void RefreshMap()
+    public IList<GameObject> RefreshMap()
     {
         // 验证数据
         if (!ValidateData())
         {
             Debug.LogError("参数错误!");
-            return;
+            return null;
         }
         // 清除障碍物
         CleanObstaclerList();
@@ -157,12 +166,13 @@ public class LoadMap : MonoBehaviour
         // 缩放地图
         MapPlane.transform.localScale = new Vector3(mapWidth * UnitWidth, 1, mapHeight * UnitWidth);
 
-        // 不显示逻辑地图障碍物则返回
-        if (!IsShow)
-        {
-            return;
-        }
+        // TODO 不显示逻辑地图障碍物则返回
+        //if (!IsShow)
+        //{
+        //    return null;
+        //}
 
+        var result = new List<GameObject>();
         // 验证障碍物, 如果为空则修改为cube
         // 按照map数据构建地图大小
 
@@ -177,7 +187,7 @@ public class LoadMap : MonoBehaviour
             for (int col = 0; col < oneRow.Length; col++)
             {
                 var cell = oneRow[col];
-                var key = String.Format("{0}:{1}", col, row);
+                var key = (row << 32) + col;
                 switch (cell)
                 {
                     case Utils.Obstacle:
@@ -191,6 +201,7 @@ public class LoadMap : MonoBehaviour
                             newObstacler.transform.localScale = new Vector3(UnitWidth, UnitWidth, UnitWidth);
                             newObstacler.transform.position = Utils.NumToPosition(MapPlane.transform.position, new Vector2(col, row), UnitWidth, mapWidth, mapHeight);
                             mapStateDic[key] = newObstacler;
+                            result.Add(newObstacler);
                         }
                         break;
                     case Utils.Accessibility:
@@ -199,7 +210,7 @@ public class LoadMap : MonoBehaviour
                         {
                             if (mapStateDic[key] != null)
                             {
-                                Destroy(mapStateDic[key]);
+                                //Destroy(mapStateDic[key]);
                                 mapStateDic[key] = null;
                             }
                         }
@@ -207,6 +218,8 @@ public class LoadMap : MonoBehaviour
                 }
             }
         }
+
+        return result;
     }
 
     //------------------------私有方法----------------------------
@@ -256,6 +269,8 @@ public class LoadMap : MonoBehaviour
             Destroy(Obstacler.GetComponent<BoxCollider>());
             Obstacler.name = "Obstacler";
             Obstacler.transform.localPosition = leftup;
+            Obstacler.layer = LayerMask.NameToLayer("Effects");
+            //string a = LayerMask.LayerToName(8);
         }
         var result = Instantiate(Obstacler);
         ObstaclerArray.Add(result);
@@ -292,5 +307,5 @@ public class LoadMap : MonoBehaviour
 
         return true;
     }
-    
+
 }

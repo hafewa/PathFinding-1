@@ -7,7 +7,7 @@ using UnityEngine;
 /// </summary>
 public class AStarPathFinding
 {
-
+    // TODO 二叉堆加入
     /// <summary>
     /// 寻找路径
     /// </summary>
@@ -19,6 +19,7 @@ public class AStarPathFinding
     /// <param name="diameterX">物体X轴宽度</param>
     /// <param name="diameterY">物体Y轴宽度</param>
     /// <param name="isJumpPoint">是否为跳跃式点, 如果为true 则路径只会给出拐点处的关键点</param>
+    /// <returns>返回路径点列表, 如果列表长度为0则没有路径</returns>
     public static IList<Node> SearchRoad(int[][] map, int startX, int startY, int endX, int endY, int diameterX, int diameterY,
         bool isJumpPoint = false, Action completeCallback = null)
     {

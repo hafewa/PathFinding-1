@@ -133,14 +133,14 @@ public class MapInfo<T> where T : PositionObject
                 if (ValidatePos(pos))
                 {
                     if (item is SchoolBehaviour) {
-                        map[pos.X][pos.Y] = Utils.Member;
+                        map[pos.Y][pos.X] = Utils.Member;
                     }else if (item is FixtureBehaviour) {
-                        map[pos.X][pos.Y] = Utils.Obstacle;
+                        map[pos.Y][pos.X] = Utils.Obstacle;
                     } else {
-                        map[pos.X][pos.Y] = Utils.Accessibility;
+                        map[pos.Y][pos.X] = Utils.Accessibility;
                     }
                 } else {
-                    map[pos.X][pos.Y] = Utils.Accessibility;
+                    map[pos.Y][pos.X] = Utils.Accessibility;
                 }
             }
         }

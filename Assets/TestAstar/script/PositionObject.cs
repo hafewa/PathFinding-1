@@ -75,8 +75,8 @@ public abstract class PositionObject : MonoBehaviour, IGraphical<Rectangle>
     /// </summary>
     public Vector3 Position
     {
-        get { return this.transform.localPosition; }
-        set { this.transform.localPosition = value; }
+        get { return this.transform.position; }
+        set { this.transform.position = value; }
     }
 
     /// <summary>
@@ -147,8 +147,8 @@ public abstract class PositionObject : MonoBehaviour, IGraphical<Rectangle>
     {
         //值有变更时重新创建Rect
         var halfDiameter = Diameter * 0.5f;
-        var x = transform.localPosition.x - halfDiameter;
-        var y = transform.localPosition.z - halfDiameter;
+        var x = transform.position.x - halfDiameter;
+        var y = transform.position.z - halfDiameter;
         if (hisDiameter - diameter > Utils.ApproachZero ||
             diameter - hisDiameter > Utils.ApproachZero ||
             hisX - x > Utils.ApproachZero ||
