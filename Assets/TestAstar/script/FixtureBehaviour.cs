@@ -9,6 +9,10 @@ using UnityEngine;
 /// </summary>
 public class FixtureBehaviour : PositionObject
 {
+    public override bool CouldMove
+    {
+        get { return false; }
+    }
 
     /// <summary>
     /// 物理信息

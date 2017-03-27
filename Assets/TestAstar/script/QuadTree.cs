@@ -24,7 +24,7 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     /// <summary>
     /// 最大树深度
     /// </summary>
-    private int maxLevel = 7;
+    private int maxLevel = 10;
 
     /// <summary>
     /// 当前四叉树所在等级
@@ -176,8 +176,9 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
 
     /// <summary>
     /// 返回传入对象可能会有碰撞的对向列表
+    /// TODO 分块交界处会有问题
     /// </summary>
-    /// <param name="rect">碰撞对象</param>
+    /// <param name="rectangle">碰撞对象</param>
     /// <returns>可能碰撞的列表, 对量性质: 在传入rect所在的最底层自己点的对量+其上各个父级的边缘节点</returns>
     public IList<T> Retrieve(Rectangle rectangle)
     {
@@ -232,8 +233,13 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
             // 划定范围, 获取范围内子对象中符合范围的对象
             // 判断是否与该区域相交 相交则取该区域内对象判断, 并获取其子节点判断是否相交
             // 获取子列表中的对象
+            //var log = "";
+            //foreach (var item in result)
+            //{
+            //    log += (item as PositionObject).name + ",";
+            //}
+            //UnityEngine.Debug.LogError(log);
         }
-
         return result;
     }
 

@@ -41,11 +41,12 @@ public class TestTargetSelecter : MonoBehaviour {
     /// </summary>
     private Member _leader;
 
-
+    /// <summary>
+    /// 颜对应表
+    /// </summary>
     private Dictionary<int, Color> typeColor = new Dictionary<int, Color>(); 
 
-
-
+    
     void Start ()
     {
         // 创建地图目标列表
@@ -62,8 +63,6 @@ public class TestTargetSelecter : MonoBehaviour {
 
     }
 
-
-
 	void Update () {
 
         // 绘制四叉树内单元
@@ -74,6 +73,9 @@ public class TestTargetSelecter : MonoBehaviour {
 
         // 搜寻目标
 	    ScanTarget();
+        
+        // 操作控制
+	    Control();
 
 	}
 
@@ -112,36 +114,18 @@ public class TestTargetSelecter : MonoBehaviour {
         }
         MemberList.RebuildQuadTree();
     }
-    
-    /// <summary>
-    /// 绘制单元位置与四叉树分区情况
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="quadTree"></param>
-    private void DrawQuadTreeLine<T>(QuadTree<T> quadTree) where T : BaseMamber, IGraphical<Rectangle>
-    {
-        // 绘制四叉树边框
-        DrawRect(quadTree.GetRectangle(), Color.white);
-        // 遍历四叉树内容
-        foreach (var item in quadTree.GetItemList())
-        {
-            // 绘制当前对象
-            DrawRect(item.GetGraphical(), typeColor[item.MemberType]);
-            // 绘制前进方向
-            var position = new Vector3(item.X, 0, item.Y);
-            Debug.DrawLine(position, position + item.Direction.normalized * 2, Color.red);
-        }
 
-        if (quadTree.GetSubNodes()[0] != null)
+    /// <summary>
+    /// 操作控制
+    /// </summary>
+    private void Control()
+    {
+        if (Input.GetMouseButtonUp(0))
         {
-            foreach (var node in quadTree.GetSubNodes())
-            {
-                DrawQuadTreeLine(node);
-            }
+            CleanAllMember();
+            CreateAllMember(ItemCount);
         }
     }
-
-
 
     /// <summary>
     /// 单元搜寻目标
@@ -162,10 +146,10 @@ public class TestTargetSelecter : MonoBehaviour {
             var targetList = TargetFilter(item, MemberList.QuadTree);
 
             // 连线
-            foreach (var targetItem in targetList)
-            {
-                Debug.DrawLine(new Vector3(item.X, 0, item.Y), new Vector3(targetItem.X, 0, targetItem.Y));
-            }
+        foreach (var targetItem in targetList)
+        {
+            Debug.DrawLine(new Vector3(item.X, 0, item.Y), new Vector3(targetItem.X, 0, targetItem.Y));
+        }
         //}
     }
 
@@ -251,18 +235,6 @@ public class TestTargetSelecter : MonoBehaviour {
     }
 
     /// <summary>
-    /// 绘制矩形
-    /// </summary>
-    /// <param name="rectangle"></param>
-    private void DrawRect(Rectangle rectangle, Color color)
-    {
-        Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
-        Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
-        Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
-        Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
-    }
-
-    /// <summary>
     /// 创建测试单元
     /// </summary>
     /// <param name="count">创建单元个数</param>
@@ -292,246 +264,51 @@ public class TestTargetSelecter : MonoBehaviour {
     }
 
     /// <summary>
-    /// 创建单个成员载体
+    /// 清理掉所有对象
     /// </summary>
-    /// <returns></returns>
-    //private GameObject CreateOneMember()
-    //{
-    //    return GameObject.CreatePrimitive(PrimitiveType.Cube);
-    //}
-}
-
-
-
-/// <summary>
-/// 单位数据
-/// </summary>
-public class Member : PositionObject, ISelectWeightData, BaseMamber, IGraphical<Rectangle>
-{
-
-
-    // ----------------------------暴露接口-------------------------------
-
-    public float Speed
+    private void CleanAllMember()
     {
-        get { return speed; }
-        set { speed = value; }
+        MemberList.Clear();
     }
+    
 
-    public int MaxHealth
+    /// <summary>
+    /// 绘制矩形
+    /// </summary>
+    /// <param name="rectangle"></param>
+    private void DrawRect(Rectangle rectangle, Color color)
     {
-        get { return maxHealth; }
-        set { maxHealth = value; }
-        
-    }
-
-    public int Health
-    {
-        get { return health; }
-        set { health = value; }
-        
-    }
-
-    public int Atack
-    {
-        get { return atack; }
-        set { atack = value; }
-    }
-
-    public int Define
-    {
-        get { return define; }
-        set { define = value; }
-    }
-
-    public int MemberType
-    {
-        get { return memberType; }
-        set { memberType = value; }
-    }
-
-    public int Diameter
-    {
-        get { return diameter; }
-        set { diameter = value; }
-    }
-
-    public int ScanDiameter
-    {
-        get { return scanDiameter; }
-        set { scanDiameter = value; }
-    }
-
-    public float X
-    {
-        get { return x; }
-        set { x = value; }
-    }
-
-    public float Y
-    {
-        get { return y; }
-        set { y = value; }
+        Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
+        Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
+        Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
+        Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
     }
 
     /// <summary>
-    /// 目标数量
+    /// 绘制单元位置与四叉树分区情况
     /// </summary>
-    public int TargetCount
+    /// <typeparam name="T"></typeparam>
+    /// <param name="quadTree"></param>
+    private void DrawQuadTreeLine<T>(QuadTree<T> quadTree) where T : BaseMamber, IGraphical<Rectangle>
     {
-        get { return targetCount;}
-        set { targetCount = value; }
-    }
-
-    /// <summary>
-    /// 目标点
-    /// </summary>
-    public Vector3 Direction
-    {
-        get { return direction;}
-        set { direction = value; }
-    }
-
-
-    /// <summary>
-    /// 生命权重
-    /// </summary>
-    public float HealthWeight {
-        get { return healthWeight;}
-        set { healthWeight = value; } }
-
-    /// <summary>
-    /// 位置权重
-    /// </summary>
-    public float DistanceWeight {
-        get {return distanceWeight;}
-        set { distanceWeight = value; } }
-
-    /// <summary>
-    /// 角度权重
-    /// </summary>
-    public float AngleWeight {
-        get { return angleWeight; }
-        set { angleWeight = value; } }
-
-    /// <summary>
-    /// 类型权重
-    /// </summary>
-    public float TypeWeight {
-        get { return typeWeight; }
-        set { typeWeight = value; } }
-
-    /// <summary>
-    /// 等级权重
-    /// </summary>
-    public float LevelWeight {
-        get { return levelWeight; }
-        set { levelWeight = value; } }
-
-
-    // ------------------------------公有属性--------------------------------
-
-
-    public string Name = "";
-
-
-    // -------------------------------私有属性--------------------------------------
-
-    private float speed = 4f;
-
-    private int maxHealth = 100;
-
-    private int health = 100;
-
-    private int atack = 10;
-
-    private int define = 10;
-
-    private int memberType = 1;
-
-    private int diameter = 1;
-
-    private int scanDiameter = 40;
-
-    private int targetCount = 10;
-
-    private float x = 0;
-
-    private float y = 0;
-
-    /// <summary>
-    /// 目标点
-    /// </summary>
-    private Vector3 direction;
-
-
-    private float healthWeight = 100;
-
-    private float distanceWeight = 0.2f;
-
-    private float angleWeight = 1;
-
-    private float typeWeight;
-
-    private float levelWeight;
-
-
-
-
-    /// <summary>
-    /// 单位矩形占位
-    /// </summary>
-    private Rectangle _rect = null;
-
-    private float _hisX = 0;
-
-    private float _hisY = 0;
-
-    private int _hisDimeter = 0;
-
-
-    // ------------------------------公有方法-------------------------------------
-
-    /// <summary>
-    /// 获得单位矩形占位
-    /// </summary>
-    /// <returns></returns>
-    public Rectangle GetGraphical()
-    {
-        // 当rect不存在或位置大小发生变更时创建新Rect
-        if (_hisDimeter != Diameter || Math.Abs(_hisX - X) > 0.0001f || Math.Abs(_hisY - Y) > 0.0001f || _rect == null)
+        // 绘制四叉树边框
+        DrawRect(quadTree.GetRectangle(), Color.white);
+        // 遍历四叉树内容
+        foreach (var item in quadTree.GetItemList())
         {
-            _hisX = X;
-            _hisY = Y;
-            _hisDimeter = Diameter;
-            _rect = new Rectangle(X, Y, Diameter, Diameter);
+            // 绘制当前对象
+            DrawRect(item.GetGraphical(), typeColor[item.MemberType]);
+            // 绘制前进方向
+            var position = new Vector3(item.X, 0, item.Y);
+            Debug.DrawLine(position, position + item.Direction.normalized * 2, Color.red);
         }
-        return _rect;
+
+        if (quadTree.GetSubNodes()[0] != null)
+        {
+            foreach (var node in quadTree.GetSubNodes())
+            {
+                DrawQuadTreeLine(node);
+            }
+        }
     }
-}
-
-
-/// <summary>
-/// Mamber基础接口
-/// </summary>
-public interface BaseMamber
-{
-    // ----------------------------------暴露接口--------------------------------------
-    float Speed { get; set; }
-    int MaxHealth { get; set; }
-    int Health { get; set; }
-    int Atack { get; set; }
-    int Define { get; set; }
-    int MemberType { get; set; }
-    int Diameter { get; set; }
-    int ScanDiameter { get; set; }
-    int TargetCount { get; set; }
-    float X { get; set; }
-    float Y { get; set; }
-
-    /// <summary>
-    /// 目标点
-    /// </summary>
-    Vector3 Direction { get; set; }
-    // ----------------------------------暴露接口--------------------------------------
 }

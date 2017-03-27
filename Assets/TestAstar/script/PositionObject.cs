@@ -107,6 +107,14 @@ public abstract class PositionObject : MonoBehaviour, IGraphical<Rectangle>
     {
         get { return this.gameObject; }
     }
+
+    /// <summary>
+    /// 当前对象是否可以移动
+    /// </summary>
+    public virtual bool CouldMove
+    {
+        get { return true; }
+    }
     
 
     /// <summary>

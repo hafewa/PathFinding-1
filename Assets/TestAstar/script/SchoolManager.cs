@@ -315,7 +315,7 @@ public class SchoolManager : MonoBehaviour
             return;
         }
         // 遍历附近单位(不论敌友), 检测碰撞并排除碰撞, (挤开效果), 列表中包含障碍物
-        var closeMemberList = targetList.QuadTree.Retrieve(member.GetGraphical());
+        var closeMemberList = targetList.QuadTree.GetScope(member.GetGraphical());
         var rect = member.GetGraphical();
         // 目标方向
         var targetDir = member.TargetPos - member.Position;
@@ -323,7 +323,12 @@ public class SchoolManager : MonoBehaviour
         var pressureReleaseDir = Vector3.zero;
         // 是否需要躲避
         var collisionCount = 0;
-        for (var k = 0; k < closeMemberList.Count; k++)
+        // 碰撞前进方向
+        var collisionThoughDir = Vector3.zero;
+        // 碰撞不能前进方向(不能移动的物体)
+        var collisionCouldNotThoughDir = Vector3.zero;
+        var collisionCouldNotThoughCount = 0;
+        for (var k = 0; closeMemberList !=null && k < closeMemberList.Count; k++)
         {
             var closeMember = closeMemberList[k];
             if (closeMember.Equals(member))
@@ -353,15 +358,24 @@ public class SchoolManager : MonoBehaviour
 
                     var departSpeed = closeMember.PhysicsInfo.SpeedDirection - member.PhysicsInfo.SpeedDirection;
                     
+                    // TODO 定最终拥挤方向
                     // 基础排斥力
                     if (diffPosition.magnitude < minDistance)
                     {
-                        // TODO 不放在这里 直接控制位置
-                        member.Position += diffPosition.normalized * (minDistance - diffPosition.magnitude) * CollisionThrough * Time.deltaTime;
+                        // 计算不可移动方向
+                        var diffPosNor = diffPosition.normalized;
+                        collisionThoughDir += diffPosNor * (minDistance - diffPosition.magnitude) * CollisionThrough * Time.deltaTime;
+                        if (!closeMember.CouldMove)
+                        {
+                            // 如果目标不能移动则
+                            collisionCouldNotThoughDir += diffPosNor;
+                            collisionCouldNotThoughCount++;
+                        }
                     }
 
                     // 求出射角度, 出射角度*出射量
                     // 使用向量法线计算求出出射标准向量
+                    // TODO 角度有问题
                     var outDir =
                         ((member.PhysicsInfo.SpeedDirection +
                           Vector3.Dot(member.PhysicsInfo.SpeedDirection, diffPosition) *diffPosition)*2 -
@@ -390,11 +404,26 @@ public class SchoolManager : MonoBehaviour
                     closeMember.PhysicsInfo.SpeedDirection *= GetUpTopSpeed(closeMember.PhysicsInfo.SpeedDirection.magnitude);
                     // 加入已对比列表
                     areadyCollisionList.Add(compereId1, true);
-                    Debug.DrawLine(member.Position, partForMember + member.Position, Color.green);
-                    //DrawRect(rect, Color.black);
-                    //DrawRect(closeRect, Color.black);
+                    //Debug.DrawLine(member.Position, partForMember + member.Position, Color.green);
                 }
             }
+        }
+
+        // 物体移动, 并且不能超不可移动方向移动
+        if (collisionThoughDir != Vector3.zero)
+        {
+            // 排除掉移动向量中不可移动方向的移动量
+            // 计算当前移动方向与不可移动的反方向是否角度小于90
+            // 如果小于90则无问题, 如果大于90则将与超过的角度部分抹掉
+            var angleCollisionThoughDir = Vector3.Angle(collisionThoughDir, collisionCouldNotThoughDir);
+            if (angleCollisionThoughDir > 90)
+            {
+                angleCollisionThoughDir -= 90;
+                var subDirLength = (float)Math.Cos(angleCollisionThoughDir)*collisionThoughDir.magnitude;
+                // 求不能前进的反方向的垂直向量
+                collisionThoughDir = Vector3.Cross(collisionCouldNotThoughDir, Vector3.up).normalized * subDirLength;
+            }
+            member.Position += collisionThoughDir;
         }
 
         // 判断是否需要躲避
@@ -407,7 +436,7 @@ public class SchoolManager : MonoBehaviour
             // 求聚合位置向量的垂直向量
             var transverseDir = Vector3.Cross(pressureReleaseDir, Vector3.up);
             // 随机左右
-            member.PhysicsInfo.SpeedDirection += transverseDir * member.PhysicsInfo.MaxSpeed * (new Random(DateTime.Now.Second).Next(10) > 5 ? -1 : 1);
+            member.PhysicsInfo.SpeedDirection += transverseDir*member.PhysicsInfo.MaxSpeed;// * (new Random((int)DateTime.Now.Ticks).Next(10) > 5 ? -1 : 1);
         }
     }
 

@@ -324,6 +324,7 @@ public class AstarTest : MonoBehaviour {
                 {
                     case Utils.Obstacle:
                         fixItem = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                        fixItem.name += i;
                         fix = fixItem.AddComponent<FixtureBehaviour>();
                         fix.transform.localScale = new Vector3(UnitWidth, UnitWidth, UnitWidth);
                         fix.transform.position = Utils.NumToPosition(transform.position, new Vector2(j, i), UnitWidth, MapWidth, MapHeight);

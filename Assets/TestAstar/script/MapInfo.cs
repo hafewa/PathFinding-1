@@ -7,7 +7,7 @@ using UnityEngine;
 /// <summary>
 /// 地图信息
 /// </summary>
-public class MapInfo<T> where T : PositionObject
+public class MapInfo<T> where T : IGraphical<Rectangle>
 {
 
 

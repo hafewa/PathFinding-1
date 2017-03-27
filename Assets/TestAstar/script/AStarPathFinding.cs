@@ -25,7 +25,7 @@ public class AStarPathFinding
     {
         // 结束节点
         Node endNode = null;
-        var now = Time.realtimeSinceStartup;
+        //var now = Time.realtimeSinceStartup;
 
         List<Node> openList = new List<Node>();
         //BinaryHeap.BinaryHeap<Node> openList = new BinaryHeap.BinaryHeap<Node>(Math.Abs(endX - startX) * Math.Abs(endY - startY), Order.DESC);

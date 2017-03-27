@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
 /// <summary>
 /// 目标选择器
@@ -64,7 +65,7 @@ public class TargetSelecter
 /// 目标列表
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class TargetList<T> where T : PositionObject
+public class TargetList<T> where T : IGraphical<Rectangle>
 {
     /// <summary>
     /// 返回全引用列表
@@ -168,6 +169,19 @@ public class TargetList<T> where T : PositionObject
         }
     }
 
+    /// <summary>
+    /// 清理数据
+    /// </summary>
+    public void Clear()
+    {
+        list.Clear();
+        quadTree.Clear();
+        if (mapinfo != null)
+        {
+            mapinfo = null;
+        }
+    }
+
 }
 
 /// <summary>
@@ -206,3 +220,242 @@ public interface ISelectWeightData
     
 }
 
+
+/// <summary>
+/// 目标选择单位数据
+/// </summary>
+public class Member : ISelectWeightData, BaseMamber, IGraphical<Rectangle>
+{
+    // ----------------------------暴露接口-------------------------------
+
+    public float Speed
+    {
+        get { return speed; }
+        set { speed = value; }
+    }
+
+    public int MaxHealth
+    {
+        get { return maxHealth; }
+        set { maxHealth = value; }
+    }
+
+    public int Health
+    {
+        get { return health; }
+        set { health = value; }
+    }
+
+    public int Atack
+    {
+        get { return atack; }
+        set { atack = value; }
+    }
+
+    public int Define
+    {
+        get { return define; }
+        set { define = value; }
+    }
+
+    public int MemberType
+    {
+        get { return memberType; }
+        set { memberType = value; }
+    }
+
+    public int Diameter
+    {
+        get { return diameter; }
+        set { diameter = value; }
+    }
+
+    public int ScanDiameter
+    {
+        get { return scanDiameter; }
+        set { scanDiameter = value; }
+    }
+
+    public float X
+    {
+        get { return x; }
+        set { x = value; }
+    }
+
+    public float Y
+    {
+        get { return y; }
+        set { y = value; }
+    }
+
+    /// <summary>
+    /// 目标数量
+    /// </summary>
+    public int TargetCount
+    {
+        get { return targetCount; }
+        set { targetCount = value; }
+    }
+
+    /// <summary>
+    /// 目标点
+    /// </summary>
+    public Vector3 Direction
+    {
+        get { return direction; }
+        set { direction = value; }
+    }
+
+
+    /// <summary>
+    /// 生命权重
+    /// </summary>
+    public float HealthWeight
+    {
+        get { return healthWeight; }
+        set { healthWeight = value; }
+    }
+
+    /// <summary>
+    /// 位置权重
+    /// </summary>
+    public float DistanceWeight
+    {
+        get { return distanceWeight; }
+        set { distanceWeight = value; }
+    }
+
+    /// <summary>
+    /// 角度权重
+    /// </summary>
+    public float AngleWeight
+    {
+        get { return angleWeight; }
+        set { angleWeight = value; }
+    }
+
+    /// <summary>
+    /// 类型权重
+    /// </summary>
+    public float TypeWeight
+    {
+        get { return typeWeight; }
+        set { typeWeight = value; }
+    }
+
+    /// <summary>
+    /// 等级权重
+    /// </summary>
+    public float LevelWeight
+    {
+        get { return levelWeight; }
+        set { levelWeight = value; }
+    }
+
+
+    // ------------------------------公有属性--------------------------------
+
+
+    public string Name = "";
+
+
+    // -------------------------------私有属性--------------------------------------
+
+    private float speed = 4f;
+
+    private int maxHealth = 100;
+
+    private int health = 100;
+
+    private int atack = 10;
+
+    private int define = 10;
+
+    private int memberType = 1;
+
+    private int diameter = 1;
+
+    private int scanDiameter = 40;
+
+    private int targetCount = 10;
+
+    private float x = 0;
+
+    private float y = 0;
+
+    /// <summary>
+    /// 目标点
+    /// </summary>
+    private Vector3 direction;
+
+
+    private float healthWeight = 100;
+
+    private float distanceWeight = 0.2f;
+
+    private float angleWeight = 1;
+
+    private float typeWeight;
+
+    private float levelWeight;
+
+
+
+
+    /// <summary>
+    /// 单位矩形占位
+    /// </summary>
+    private Rectangle _rect = null;
+
+    private float _hisX = 0;
+
+    private float _hisY = 0;
+
+    private int _hisDimeter = 0;
+
+
+    // ------------------------------公有方法-------------------------------------
+
+    /// <summary>
+    /// 获得单位矩形占位
+    /// </summary>
+    /// <returns></returns>
+    public Rectangle GetGraphical()
+    {
+        // 当rect不存在或位置大小发生变更时创建新Rect
+        if (_hisDimeter != Diameter || Math.Abs(_hisX - X) > 0.0001f || Math.Abs(_hisY - Y) > 0.0001f || _rect == null)
+        {
+            _hisX = X;
+            _hisY = Y;
+            _hisDimeter = Diameter;
+            _rect = new Rectangle(X, Y, Diameter, Diameter);
+        }
+        return _rect;
+    }
+}
+
+
+/// <summary>
+/// Mamber基础接口
+/// </summary>
+public interface BaseMamber
+{
+    // ----------------------------------暴露接口--------------------------------------
+    float Speed { get; set; }
+    int MaxHealth { get; set; }
+    int Health { get; set; }
+    int Atack { get; set; }
+    int Define { get; set; }
+    int MemberType { get; set; }
+    int Diameter { get; set; }
+    int ScanDiameter { get; set; }
+    int TargetCount { get; set; }
+    float X { get; set; }
+    float Y { get; set; }
+
+    /// <summary>
+    /// 目标点
+    /// </summary>
+    Vector3 Direction { get; set; }
+    // ----------------------------------暴露接口--------------------------------------
+}
