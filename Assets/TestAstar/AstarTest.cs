@@ -6,10 +6,6 @@ using System.IO;
 using System.Linq;
 
 public class AstarTest : MonoBehaviour {
-
-    private IList<GameObject> pathPoint = new List<GameObject>();
-    private GameObject main;
-
     /// <summary>
     /// 寻路X轴宽度
     /// </summary>
@@ -40,25 +36,25 @@ public class AstarTest : MonoBehaviour {
     /// </summary>
     public int UnitWidth = 1;
 
-    /// <summary>
-    /// 其实x
-    /// </summary>
-    public int StartX = 0;
+    ///// <summary>
+    ///// 其实x
+    ///// </summary>
+    //public int StartX = 0;
 
-    /// <summary>
-    /// 起始Y
-    /// </summary>
-    public int StartY = 0;
+    ///// <summary>
+    ///// 起始Y
+    ///// </summary>
+    //public int StartY = 0;
 
-    /// <summary>
-    /// 目标X
-    /// </summary>
-    public int TargetX = 0;
+    ///// <summary>
+    ///// 目标X
+    ///// </summary>
+    //public int TargetX = 0;
 
-    /// <summary>
-    /// 目标Y
-    /// </summary>
-    public int TargetY = 0;
+    ///// <summary>
+    ///// 目标Y
+    ///// </summary>
+    //public int TargetY = 0;
 
     /// <summary>
     /// 是否提供跳点路径
@@ -89,15 +85,37 @@ public class AstarTest : MonoBehaviour {
     /// 集群引用
     /// </summary>
     public SchoolManager schoolManager;
-    
+
+
+
+    /// <summary>
+    /// 路径点列表
+    /// </summary>
+    private IList<GameObject> pathPoint = new List<GameObject>();
+
+    /// <summary>
+    /// 主相机
+    /// </summary>
+    private Camera mainCamera;
+
+    /// <summary>
+    /// 上次目标点X
+    /// </summary>
+    private int lastTimeTargetX = 0;
+
+    /// <summary>
+    /// 上次目标点Y
+    /// </summary>
+    private int lastTimeTargetY = 0;
 
     void Start () {
 
         // 设定帧数
         Application.targetFrameRate = 60;
-        main = GameObject.Find("Main Camera");
+        mainCamera = GameObject.Find("Main Camera").GetComponent<Camera>();
         var loadMapPos = LoadMap.GetLeftBottom();
         schoolManager.Init(loadMapPos.x, loadMapPos.z, MapWidth, MapHeight, UnitWidth, null);
+        InitMapInfo();
     }
 
     void Update()
@@ -114,69 +132,72 @@ public class AstarTest : MonoBehaviour {
 
         if (Input.GetMouseButtonDown(0))
         {
-
-            // 加载文件内容
-            var mapInfoPath = Application.dataPath + Path.AltDirectorySeparatorChar + "mapinfo";
-            var mapInfoStr = Utils.LoadFileInfo(mapInfoPath);
-            var mapInfoData = DeCodeInfo(mapInfoStr);
-            //var map = RandomMap(MapWidth, MapWidth);
-
-            MapWidth = mapInfoData[0].Length;
-            MapHeight = mapInfoData.Length;
-            if (TargetX >= MapWidth || TargetX < 0)
+            // 获取地图上的点击点
+            var ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+            Physics.Raycast(ray, out hit);
+            // 点击到底板
+            if (hit.collider != null && hit.collider.name.Equals(LoadMap.MapPlane.name))
             {
-                TargetX = MapWidth - 1;
-            }
-            if (TargetY >= MapHeight || TargetY < 0)
-            {
-                TargetY = MapHeight - 1;
-            }
-            var path = AStarPathFinding.SearchRoad(mapInfoData, StartX, StartY, TargetX, TargetY, DiameterX, DiameterY, IsJumpPoint);
+                var posOnMap = Utils.PositionToNum(LoadMap.MapPlane.transform.position, hit.point, UnitWidth, MapWidth, MapHeight);
+                // 加载文件内容
+                var mapInfoData = InitMapInfo();
+                var path = AStarPathFinding.SearchRoad(mapInfoData, lastTimeTargetX, lastTimeTargetY, posOnMap[0], posOnMap[1], DiameterX, DiameterY, IsJumpPoint);
+                // 根据path放地标, 使用组队寻路跟随过去
+                StartCoroutine(Step(path));
+                
+                var loadMapPos = LoadMap.GetLeftBottom();
+                schoolManager.Init(loadMapPos.x, loadMapPos.z, MapWidth, MapHeight, UnitWidth, mapInfoData);
+                StartMoving(path, mapInfoData, lastTimeTargetX, lastTimeTargetY);
 
-            init(mapInfoData);
-            StartCoroutine(Step(path));
-            // 根据path放地标, 使用组队寻路跟随过去
+                // 缓存上次目标点
+                lastTimeTargetX = posOnMap[0];
+                lastTimeTargetY = posOnMap[1];
 
-            LoadMap.Init(mapInfoData, UnitWidth);
-            var loadMapPos = LoadMap.GetLeftBottom();
-            schoolManager.Init(loadMapPos.x, loadMapPos.z, MapWidth, MapHeight, UnitWidth, mapInfoData);
-            StartMoving(path, mapInfoData);
+            }
         }
 
+        // 上下左右移动
         if (Input.GetKey(KeyCode.UpArrow))
         {
-            main.transform.localPosition = new Vector3(main.transform.localPosition.x, main.transform.localPosition.y, main.transform.localPosition.z + 1);
+            mainCamera.transform.localPosition = new Vector3(mainCamera.transform.localPosition.x, mainCamera.transform.localPosition.y, mainCamera.transform.localPosition.z + 1);
         }
         if (Input.GetKey(KeyCode.DownArrow))
         {
-            main.transform.localPosition = new Vector3(main.transform.localPosition.x, main.transform.localPosition.y, main.transform.localPosition.z - 1);
+            mainCamera.transform.localPosition = new Vector3(mainCamera.transform.localPosition.x, mainCamera.transform.localPosition.y, mainCamera.transform.localPosition.z - 1);
         }
         if (Input.GetKey(KeyCode.LeftArrow))
         {
-            main.transform.localPosition = new Vector3(main.transform.localPosition.x - 1, main.transform.localPosition.y, main.transform.localPosition.z);
+            mainCamera.transform.localPosition = new Vector3(mainCamera.transform.localPosition.x - 1, mainCamera.transform.localPosition.y, mainCamera.transform.localPosition.z);
         }
         if (Input.GetKey(KeyCode.RightArrow))
         {
-            main.transform.localPosition = new Vector3(main.transform.localPosition.x + 1, main.transform.localPosition.y, main.transform.localPosition.z);
+            mainCamera.transform.localPosition = new Vector3(mainCamera.transform.localPosition.x + 1, mainCamera.transform.localPosition.y, mainCamera.transform.localPosition.z);
         }
+        // 升高下降
         if (Input.GetKey(KeyCode.PageUp))
         {
-            main.transform.localPosition = new Vector3(main.transform.localPosition.x, main.transform.localPosition.y + 1, main.transform.localPosition.z);
+            mainCamera.transform.localPosition = new Vector3(mainCamera.transform.localPosition.x, mainCamera.transform.localPosition.y + 1, mainCamera.transform.localPosition.z);
         }
         if (Input.GetKey(KeyCode.PageDown))
         {
-            main.transform.localPosition = new Vector3(main.transform.localPosition.x, main.transform.localPosition.y - 1, main.transform.localPosition.z);
+            mainCamera.transform.localPosition = new Vector3(mainCamera.transform.localPosition.x, mainCamera.transform.localPosition.y - 1, mainCamera.transform.localPosition.z);
         }
     }
 
     /// <summary>
     /// 初始化
     /// </summary>
-    /// <param name="map">地图数据</param>
-    void init(int[][] map)
+    public int[][] InitMapInfo()
     {
-        LoadMap.Init(map, UnitWidth);
-        schoolManager.Init(-MapWidth / 2, -MapHeight / 2, MapWidth, MapHeight, 10, map);
+        var mapInfoPath = Application.dataPath + Path.AltDirectorySeparatorChar + "mapinfo";
+        var mapInfoStr = Utils.LoadFileInfo(mapInfoPath);
+        var mapInfoData = DeCodeInfo(mapInfoStr);
+        LoadMap.Init(mapInfoData, UnitWidth);
+        schoolManager.Init(-MapWidth / 2, -MapHeight / 2, MapWidth, MapHeight, 10, mapInfoData);
+        MapWidth = mapInfoData[0].Length;
+        MapHeight = mapInfoData.Length;
+        return mapInfoData;
     }
     
     /// <summary>
@@ -282,7 +303,7 @@ public class AstarTest : MonoBehaviour {
     /// </summary>
     /// <param name="pathList">列表</param>
     /// <param name="map">地图信息</param>
-    private void StartMoving(IList<Node> pathList, int[][] map)
+    private void StartMoving(IList<Node> pathList, int[][] map, int startX, int startY)
     {
         // 清除所有组
         schoolManager.ClearAll();
@@ -290,7 +311,7 @@ public class AstarTest : MonoBehaviour {
         SchoolBehaviour school = null;
         var cloneList = new List<Node>(pathList);
         var target = Utils.NumToPosition(LoadMap.transform.position, new Vector2(cloneList[cloneList.Count - 1].X, cloneList[cloneList.Count - 1].Y), UnitWidth, MapWidth, MapHeight);
-       
+        var start = Utils.NumToPosition(LoadMap.transform.position, new Vector2(startX, startY), UnitWidth, MapWidth, MapHeight);
         for (int i = 0; i < ItemCount; i++)
         {
             schoolItem = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -299,7 +320,7 @@ public class AstarTest : MonoBehaviour {
             school.PhysicsInfo.MaxSpeed = 10;
             school.RotateSpeed = 1;
             school.RotateWeight = 1;
-            school.transform.localPosition = new Vector3((i % 3) * 2, 1, i / 3 * 2);
+            school.transform.localPosition = new Vector3((i % 3) * 2 + start.x, start.y, i / 3 * 2 + start.z);
             school.name = "item" + i;
             school.TargetPos = target;
             school.Diameter = (i == 0 ? 5 : 2) * UnitWidth;
@@ -353,7 +374,7 @@ public class AstarTest : MonoBehaviour {
                 return;
             }
             var node = cloneList[cloneList.Count - 1];
-            //thisGroup.Target = Utils.NumToPosition(LoadMap.transform.position, new Vector2(node.X, node.Y), UnitWidth, MapWidth, MapHeight);
+            thisGroup.Target = Utils.NumToPosition(LoadMap.transform.position, new Vector2(node.X, node.Y), UnitWidth, MapWidth, MapHeight);
         };
         school.Group.ProportionOfComplete = 1;
         school.Group.Complete = lambdaComplete;

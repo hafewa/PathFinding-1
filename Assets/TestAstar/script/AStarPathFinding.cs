@@ -25,23 +25,27 @@ public class AStarPathFinding
     {
         // 结束节点
         Node endNode = null;
-        //var now = Time.realtimeSinceStartup;
+        var now = Time.realtimeSinceStartup;
 
-        List<Node> openList = new List<Node>();
+        //List<Node> openList = new List<Node>();
         //BinaryHeap.BinaryHeap<Node> openList = new BinaryHeap.BinaryHeap<Node>(Math.Abs(endX - startX) * Math.Abs(endY - startY), Order.DESC);
         //Queue<Node> openList = new Queue<Node>();
-        IList<Node> closeList = new List<Node>();
+        //IList<Node> closeList = new List<Node>();
+        IDictionary<long, Node> openDic= new Dictionary<long, Node>();
+        IDictionary<long, Node> closeDic = new Dictionary<long, Node>();
         // 初始化开始节点
-        openList.Add(new Node(startX, startY));
+        openDic.Add(GetKey(startX, startY), new Node(startX, startY));
         //openList.Enqueue(new Node(startX, startY));
         // 如果搜索次数大于(w+h) * 4 则停止搜索
-        var maxSearchCount = (map.Length + map[0].Length) * 4;
+        var maxSearchCount = (map.Length + map[0].Length) * 40;
 
         // 计算结束偏移
         endX = endX - diameterX;
         endY = endY - diameterY;
+
         var counter = 0;
 
+        // 寻路G值
         int g;
         Node[] surroundPointArray;
         Node currentPoint;
@@ -70,42 +74,40 @@ public class AStarPathFinding
         {
             counter++;
             // 获取最小节点
-            currentPoint = Utils.GetNodeFromListWithCompare(openList, false, compareTo);
+            currentPoint = Utils.GetNodeFromListWithCompare(openDic.Values, false, compareTo);
             // 删除该节点
-            openList.Remove(currentPoint);
-            //currentPoint = openList.Dequeue();
+            var keyForCurrentPoing = GetKey(currentPoint.X, currentPoint.Y);
+            openDic.Remove(keyForCurrentPoing);
             // 将当前节点放入关闭列表
-            closeList.Add(currentPoint);
+            if (!closeDic.ContainsKey(keyForCurrentPoing))
+            {
+                closeDic.Add(keyForCurrentPoing, currentPoint);
+            }
             // 获取当前节点周围的节点
             surroundPointArray = SurroundPoint(currentPoint);
 
             foreach (Node surroundPoint in surroundPointArray)
             {
-                // 是否可以通过
-                // 判断位置
-                // 判断是否障碍
                 // 斜向是否可移动
                 // 判断周围节点合理性
-                if (ExistInList(surroundPoint, closeList.GetEnumerator()) == null && IsPassable(map, surroundPoint, currentPoint, diameterX, diameterY))
+                if (ExistInList(surroundPoint.X, surroundPoint.Y, closeDic) == null && IsPassable(map, surroundPoint, currentPoint, diameterX, diameterY))
                 {
                     // 计算G值 上下左右为10, 四角为14
-                    g = currentPoint.G + ((currentPoint.X - surroundPoint.X) * (currentPoint.Y - surroundPoint.Y)) == 0
-                        ? 10
-                        : 14;
+                    g = currentPoint.G + (((currentPoint.X - surroundPoint.X) * (currentPoint.Y - surroundPoint.Y)) == 0 ? 10 : 14);
 
                     // 该点是否在开启列表中
-                    if (ExistInList(surroundPoint, openList.GetEnumerator()) == null)
+                    if (ExistInList(surroundPoint.X, surroundPoint.Y, openDic) == null)
                     {
                         // 计算H值, 通过水平和垂直距离确定
-                        surroundPoint.H = Math.Abs(endX - surroundPoint.X)*10 + Math.Abs(endY - surroundPoint.Y)*10;//(int)(Math.Sqrt(Math.Pow(endX - surroundPoint.X, 2) + Math.Pow(endY - surroundPoint.Y, 2)));//
+                        surroundPoint.H = (int)(Math.Sqrt(Math.Pow(endX - surroundPoint.X, 2) + Math.Pow(endY - surroundPoint.Y, 2))) * 10;//Math.Abs(endX - surroundPoint.X)*10 + Math.Abs(endY - surroundPoint.Y)*10;//
                         surroundPoint.G = g;
                         surroundPoint.F = surroundPoint.H + surroundPoint.G;
                         surroundPoint.Parent = currentPoint;
-                        openList.Add(surroundPoint);
+                        openDic.Add(GetKey(surroundPoint.X, surroundPoint.Y), surroundPoint);
                     }
                     else // 存在于开启列表, 比较当前的G值与之前的G值大小
                     {
-                        var node = ExistInList(surroundPoint, openList.GetEnumerator());
+                        var node = ExistInList(surroundPoint.X, surroundPoint.Y, openDic);
                         if (g < node.G)
                         {
                             node.Parent = currentPoint;
@@ -118,23 +120,20 @@ public class AStarPathFinding
 
 
             // 如果开放列表为空, 则没有通路
-            if (openList.Count == 0)
+            if (openDic.Count == 0)
             {
                 break;
             }
 
-            // 重新排列, 将F值最小的放在最先取出的位置
-            //var tmpList = openList.ToArray();
-            //Array.Sort(tmpList, (a, b) => a.F - b.F);
-            //openList = new Queue<Node>(tmpList);
             // 如果搜索次数大于(w+h) * 4 则停止搜索
-            //if (counter > maxSearchCount)
-            //{
-            //    //openList = null;
-            //    break;
-            //}
+            if (counter > maxSearchCount)
+            {
+                //openList = null;
+                break;
+            }
 
-        } while ((endNode = ExistInList(new Node(endX, endY), openList.GetEnumerator())) == null);
+            // TODO 可以不创建新对象
+        } while ((endNode = ExistInList(endX, endY, openDic)) == null);
         
         IList<Node> path = new List<Node>();
         // 如果有可行路径
@@ -186,6 +185,7 @@ public class AStarPathFinding
             completeCallback();
         }
 
+        Debug.Log(string.Format("{0:#.##########}", Time.realtimeSinceStartup - now));
         // 返回路径, 如果路径数量为0 则没有可行路径
         return path;
     }
@@ -267,26 +267,26 @@ public class AStarPathFinding
     /// <param name="node">被查找节点</param>
     /// <param name="nodeList">查找列表</param>
     /// <returns></returns>
-    private static Node ExistInList(Node node, IEnumerator<Node> nodeList)
-    {
-        if (node == null || nodeList == null)
-        {
-            return null;
-        }
-        //var now = Time.realtimeSinceStartup;
-        // ToArray能提高运行速度
-        while (nodeList.MoveNext())
-        {
-            var tmpNode = nodeList.Current;
-            if (node.X == tmpNode.X && node.Y == tmpNode.Y)
-            {
-                return tmpNode;
-            }
+    //private static Node ExistInList(Node node, IEnumerator<Node> nodeList)
+    //{
+    //    if (node == null || nodeList == null)
+    //    {
+    //        return null;
+    //    }
+    //    //var now = Time.realtimeSinceStartup;
+    //    // ToArray能提高运行速度
+    //    while (nodeList.MoveNext())
+    //    {
+    //        var tmpNode = nodeList.Current;
+    //        if (node.X == tmpNode.X && node.Y == tmpNode.Y)
+    //        {
+    //            return tmpNode;
+    //        }
 
-        }
-        //Debug.Log(string.Format("{0:#.##########}", Time.realtimeSinceStartup - now));
-        return null;
-    }
+    //    }
+    //    //Debug.Log(string.Format("{0:#.##########}", Time.realtimeSinceStartup - now));
+    //    return null;
+    //}
 
     /// <summary>
     /// 
@@ -294,28 +294,61 @@ public class AStarPathFinding
     /// <param name="node"></param>
     /// <param name="nodeList"></param>
     /// <returns></returns>
-    private static Node ExistInList(Node node, Node[] nodeList)
+    //private static Node ExistInList(Node node, Node[] nodeList)
+    //{
+    //    if (node == null || nodeList == null)
+    //    {
+    //        return null;
+    //    }
+    //    for (var i = 0; i < nodeList.Length; i++)
+    //    {
+    //        var tmpNode = nodeList[i];
+    //        try
+    //        {
+    //            if (node.X == tmpNode.X && node.Y == tmpNode.Y)
+    //            {
+    //                return tmpNode;
+    //            }
+    //        }
+    //        catch
+    //        {
+    //            int j = 0;
+    //        }
+    //    }
+    //    return null;
+    //}
+
+    /// <summary>
+    /// 在字典中获取节点
+    /// </summary>
+    /// <param name="x">位置x</param>
+    /// <param name="y">位置y</param>
+    /// <param name="nodeDic">目标字典</param>
+    /// <returns>如果存在则返回该节点, 否则返回null</returns>
+    private static Node ExistInList(long x, long y, IDictionary<long, Node> nodeDic)
     {
-        if (node == null || nodeList == null)
+        Node result = null;
+        if (x >= 0 && y >= 0 && nodeDic != null)
         {
-            return null;
-        }
-        for (var i = 0; i < nodeList.Length; i++)
-        {
-            var tmpNode = nodeList[i];
-            try
+            long key = GetKey(x, y);
+            if (nodeDic.ContainsKey(key))
             {
-                if (node.X == tmpNode.X && node.Y == tmpNode.Y)
-                {
-                    return tmpNode;
-                }
-            }
-            catch
-            {
-                int j = 0;
+                result = nodeDic[key];
             }
         }
-        return null;
+        return result;
+    }
+
+    /// <summary>
+    /// 获取node的key值
+    /// </summary>
+    /// <param name="x">位置x</param>
+    /// <param name="y">位置y</param>
+    /// <returns>key值</returns>
+    private static long GetKey(long x, long y)
+    {
+        var result = (x << 32) + y;
+        return result;
     }
 
 }
