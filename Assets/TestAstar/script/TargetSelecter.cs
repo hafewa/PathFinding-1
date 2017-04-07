@@ -9,6 +9,275 @@ using UnityEngine;
 /// </summary>
 public class TargetSelecter
 {
+    /// <summary>
+    /// 单例对象
+    /// </summary>
+    public static TargetSelecter Single
+    {
+        get
+        {
+            if (single == null)
+            {
+                single = new TargetSelecter();
+            }
+            return single;
+        }
+    }
+
+    /// <summary>
+    /// 单例对象
+    /// </summary>
+    private static TargetSelecter single = null;
+
+
+    /// <summary>
+    /// 筛选对象
+    /// TODO 优化
+    /// </summary>
+    /// <typeparam name="T">对象类型. 必须继承</typeparam>
+    /// <param name="searchObj">搜索对象</param>
+    /// <param name="quadTree">四叉树</param>
+    /// <returns></returns>
+    public IList<T> TargetFilter<T>(T searchObj, QuadTree<T> quadTree) where T : ISelectWeightData, BaseMamber, IGraphical<Rectangle>
+    {
+        IList<T> result = null;
+        if (searchObj != null && quadTree != null)
+        {
+            // 取出范围内的单位
+            var inScope =
+                quadTree.GetScope(new Rectangle(searchObj.X - searchObj.ScanDiameter / 2f, searchObj.Y - searchObj.ScanDiameter / 2f,
+                    searchObj.ScanDiameter,
+                    searchObj.ScanDiameter));
+
+            // 单位数量
+            var targetCount = searchObj.TargetCount;
+            // 目标列表Array
+            var targetArray = new T[targetCount];
+            // 目标权重值
+            var weightKeyArray = new float[targetCount];
+
+            for (var i = 0; i < inScope.Count; i++)
+            {
+                var item = inScope[i];
+                if (item.Equals(searchObj))
+                {
+                    continue;
+                }
+                var sumWeight = 0f;
+
+
+                // 从列表中找到几项权重值最高的目标个数个单位
+                // 将各项值标准化, 然后乘以权重求和, 得到最高值
+
+                // -------------------------Level1-----------------------------
+                // 是否可攻击空中单位
+                if (item.IsAir)
+                {
+                    if (searchObj.AirCraftWeight < 0)
+                    {
+                        continue;
+                    }
+                    sumWeight += searchObj.AirCraftWeight;
+                }
+
+                // 是否可攻击建筑
+                if (item.IsBuild)
+                {
+                    if (searchObj.BuildWeight < 0)
+                    {
+                        continue;
+                    }
+                    sumWeight += searchObj.BuildWeight;
+                }
+
+                // 是否可攻击地面单位
+                if (item.IsSurface)
+                {
+                    if (searchObj.SurfaceWeight < 0)
+                    {
+                        continue;
+                    }
+                    sumWeight += searchObj.SurfaceWeight;
+                }
+
+                // -------------------------Level2-----------------------------
+                switch (item.ItemType)
+                {
+                    case MemberItemType.Tank:
+                        sumWeight += searchObj.TankWeight;
+                        break;
+                    case MemberItemType.LV:
+                        sumWeight += searchObj.LVWeight;
+                        break;
+                    case MemberItemType.Cannon:
+                        sumWeight += searchObj.CannonWeight;
+                        break;
+                    case MemberItemType.Aircraft:
+                        sumWeight += searchObj.AirCraftWeight;
+                        break;
+                    case MemberItemType.Soldier:
+                        sumWeight += searchObj.SoldierWeight;
+                        break;
+                }
+
+                // -------------------------Level3-----------------------------
+                // 隐形单位
+                if (item.IsHide)
+                {
+                    if (searchObj.HideWeight < 0)
+                    {
+                        continue;
+                    }
+                    sumWeight += searchObj.HideWeight;
+                }
+                // 钻地隐形单位
+                if (item.IsHideZD)
+                {
+                    if (searchObj.HideZDWeight < 0)
+                    {
+                        continue;
+                    }
+                    sumWeight += searchObj.HideZDWeight;
+                }
+                // 嘲讽单位
+                if (item.IsTaunt)
+                {
+                    if (searchObj.TauntWeight < 0)
+                    {
+                        continue;
+                    }
+                    sumWeight += searchObj.TauntWeight;
+                }
+
+                // -------------------------Level4-----------------------------
+                // 小生命权重, 血越少权重越高
+                if (searchObj.HealthMaxWeight > 0)
+                {
+                    // 血量 (最大血量 - 当前血量)/最大血量 * 生命权重
+                    sumWeight += searchObj.HealthMaxWeight * (item.MaxHealth - item.Health) / item.MaxHealth;
+                }
+
+                // 大生命权重, 生命值越多权重越高
+                if (searchObj.HealthMinWeight > 0)
+                {
+                    // 血量 当前血量/最大血量 * 生命权重
+                    sumWeight += searchObj.HealthMinWeight * item.Health / item.MaxHealth;
+                }
+
+                // 角度权重, 角度越大权重越小
+                if (searchObj.AngleWeight > 0)
+                {
+                    sumWeight += searchObj.AngleWeight * (180 - Vector3.Angle(searchObj.Direction, new Vector3(item.X - searchObj.X, 0, item.Y - searchObj.Y))) / 180;
+                }
+
+                var distance = Utils.GetTwoPointDistance2D(searchObj.X, searchObj.Y, item.X, item.Y);
+                // 长距离权重, 距离越远权重越大
+                if (searchObj.DistanceMinWeight > 0)
+                {
+                    sumWeight += searchObj.DistanceMinWeight *
+                                 (searchObj.ScanDiameter -  distance) /
+                                 searchObj.ScanDiameter;
+                }
+
+                // 短距离权重, 距离越远权重越小
+                if (searchObj.DistanceMaxWeight > 0)
+                {
+                    sumWeight += searchObj.DistanceMaxWeight * distance / searchObj.ScanDiameter;
+                }
+
+                // TODO 各项为插入式结构
+                // 比对列表中的值, 大于其中某项值则将其替换位置并讲其后元素向后推一位.
+                for (var j = 0; j < weightKeyArray.Length; j++)
+                {
+                    if (sumWeight > weightKeyArray[j])
+                    {
+                        for (var k = weightKeyArray.Length - 1; k > j; k--)
+                        {
+                            weightKeyArray[k] = weightKeyArray[k - 1];
+                            targetArray[k] = targetArray[k - 1];
+                        }
+                        weightKeyArray[j] = sumWeight;
+                        targetArray[j] = item;
+                        break;
+                    }
+                }
+            }
+
+            result = targetArray.Where(targetItem => targetItem != null).ToList();
+
+            // TODO 不放在这里 散射效果
+            if (searchObj.ScatteringRadius > Utils.ApproachZero && result.Count > 0)
+            {
+                result = Scottering(result[0], searchObj, quadTree);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 散射效果
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="targetObj">目标单位</param>
+    /// <param name="searchObj">搜索单位</param>
+    /// <param name="quadTree">对象二叉树</param>
+    /// <returns>被散射目标</returns>
+    public static List<T> Scottering<T>(T targetObj, T searchObj, QuadTree<T> quadTree) where T : ISelectWeightData, BaseMamber, IGraphical<Rectangle>
+    {
+        List<T> result = null;
+        // 散射, 按照距离搜索周围的单位, 并将其中一个作为本次的目标
+        // 如果散射参数有值, 并且筛选列表中存在目标, 则取第一个单位作为筛选目标散射周围单位
+        if ((searchObj.ScatteringRadius > Utils.ApproachZero && targetObj != null))
+        {
+            result = new List<T>();
+            var target = targetObj;
+            // TODO 圆形 取单位周围单位
+            var rect = new Rectangle(target.X - searchObj.ScatteringRadius, target.Y - searchObj.ScatteringRadius,
+                searchObj.ScatteringRadius * 2, searchObj.ScatteringRadius * 2);
+           
+            // 距离太近向后推
+            var searchPos = new Vector3(searchObj.X, 0, searchObj.Y);
+            var targetPos = new Vector3(target.X, 0, target.Y);
+            var diffPos = targetPos - searchPos;
+            var distance = diffPos.magnitude;
+            // 距离小于极限距离
+            if (distance < searchObj.ScatteringRadius * 1.2f)
+            {
+                // 将目标位置向后推
+                diffPos = diffPos.normalized * searchObj.ScatteringRadius;
+                targetPos = searchPos + diffPos;
+                rect.X = targetPos.x - searchObj.ScatteringRadius;
+                rect.Y = targetPos.z - searchObj.ScatteringRadius;
+            }
+            Utils.DrawRect(rect, Color.red);
+            Debug.DrawLine(searchPos, targetPos, Color.red);
+            // 散射范围内的单位
+            var scatteringList = quadTree.GetScope(rect);
+            // 计算命中
+            var hitRate = 0f;
+            var sumVolume = 0f;
+            foreach (var scatteringItem in scatteringList)
+            {
+                sumVolume += scatteringItem.Diameter * scatteringItem.Diameter;
+            }
+            hitRate = (1 - (float)Math.Pow(1 - searchObj.Accuracy, sumVolume)) * 100;
+            // 先随机命中, 如果命中则返回一个对象
+            // 如果没命中则返回空对象
+            // 随机一个值从对象中
+            var random = new System.Random(DateTime.Now.Millisecond);
+            var randomNum = random.Next(100);
+            
+            if (randomNum <= hitRate)
+            {
+                // 命中
+                result.Add(scatteringList[random.Next(scatteringList.Count)]);
+            }
+        }
+        return result;
+    }
+
+
     // 耦合一些功能
     // 圆形,矩形,扇形, 多图形对单图形碰撞
     public static IList<T> SearchTarget<T>(T mine, IList<T> list) where T : ISelectWeightData
@@ -55,6 +324,23 @@ public class TargetSelecter
                     result.Add(item);
                 }
             }
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// 获取单位权重值
+    /// </summary>
+    /// <typeparam name="T">单位</typeparam>
+    /// <param name="target">被选择单位</param>
+    /// <param name="selecter">选择单位</param>
+    /// <returns>权重值</returns>
+    private float GetWight<T>(T target, T selecter) where T : ISelectWeightData, BaseMamber, IGraphical<Rectangle>
+    {
+        var result = 0f;
+        if (target != null && selecter != null)
+        {
+            
         }
         return result;
     }
@@ -115,6 +401,7 @@ public class TargetList<T> where T : IGraphical<Rectangle>
     /// <param name="y">地图位置y</param>
     /// <param name="width">地图宽度</param>
     /// <param name="height">地图高度</param>
+    /// <param name="unitWidht"></param>
     public TargetList(float x, float y, int width, int height, int unitWidht)
     {
         var mapRect = new Rectangle(x, y, width * unitWidht, height * unitWidht);
@@ -184,42 +471,6 @@ public class TargetList<T> where T : IGraphical<Rectangle>
 
 }
 
-/// <summary>
-/// 选择目标权重抽象类
-/// TODO 改成接口, 不适用抽象类
-/// </summary>
-public interface ISelectWeightData
-{
-    // 所有值都是从0-10, 0为完全不理会, 10为很重要, 并与其它权重进行合算
-
-    /// <summary>
-    /// 生命权重
-    /// </summary>
-    float HealthWeight { get; set; }
-
-    /// <summary>
-    /// 位置权重
-    /// </summary>
-    float DistanceWeight { get; set; }
-
-    /// <summary>
-    /// 角度权重
-    /// </summary>
-    float AngleWeight { get; set; }
-
-    /// <summary>
-    /// 类型权重
-    /// </summary>
-    float TypeWeight { get; set; }
-
-    /// <summary>
-    /// 等级权重
-    /// </summary>
-    float LevelWeight { get; set; }
-
-    
-}
-
 
 /// <summary>
 /// 目标选择单位数据
@@ -258,12 +509,6 @@ public class Member : ISelectWeightData, BaseMamber, IGraphical<Rectangle>
         set { define = value; }
     }
 
-    public int MemberType
-    {
-        get { return memberType; }
-        set { memberType = value; }
-    }
-
     public int Diameter
     {
         get { return diameter; }
@@ -291,72 +536,155 @@ public class Member : ISelectWeightData, BaseMamber, IGraphical<Rectangle>
     /// <summary>
     /// 目标数量
     /// </summary>
-    public int TargetCount
-    {
-        get { return targetCount; }
-        set { targetCount = value; }
-    }
+    public int TargetCount { get; set; }
 
     /// <summary>
-    /// 目标点
+    /// 方向
     /// </summary>
-    public Vector3 Direction
-    {
-        get { return direction; }
-        set { direction = value; }
-    }
-
-
-    /// <summary>
-    /// 生命权重
-    /// </summary>
-    public float HealthWeight
-    {
-        get { return healthWeight; }
-        set { healthWeight = value; }
-    }
-
-    /// <summary>
-    /// 位置权重
-    /// </summary>
-    public float DistanceWeight
-    {
-        get { return distanceWeight; }
-        set { distanceWeight = value; }
-    }
-
-    /// <summary>
-    /// 角度权重
-    /// </summary>
-    public float AngleWeight
-    {
-        get { return angleWeight; }
-        set { angleWeight = value; }
-    }
-
-    /// <summary>
-    /// 类型权重
-    /// </summary>
-    public float TypeWeight
-    {
-        get { return typeWeight; }
-        set { typeWeight = value; }
-    }
-
-    /// <summary>
-    /// 等级权重
-    /// </summary>
-    public float LevelWeight
-    {
-        get { return levelWeight; }
-        set { levelWeight = value; }
-    }
-
+    public Vector3 Direction { get; set; }
 
     // ------------------------------公有属性--------------------------------
 
 
     public string Name = "";
+
+    /// <summary>
+    /// 是否飞行
+    /// </summary>
+    public bool IsAir { get; set; }
+
+    /// <summary>
+    /// 是否地面
+    /// </summary>
+    public bool IsSurface { get; set; }
+
+    /// <summary>
+    /// 是否建筑
+    /// </summary>
+    public bool IsBuild { get; set; }
+
+    /// <summary>
+    /// 第二级类型
+    /// 区分步兵, 坦克, 载具, 火炮, 飞行棋
+    /// </summary>
+    public MemberItemType ItemType { get; set; }
+
+    /// <summary>
+    /// 是否隐形
+    /// </summary>
+    public bool IsHide { get; set; }
+
+    /// <summary>
+    /// 是否钻地
+    /// </summary>
+    public bool IsHideZD { get; set; }
+
+    /// <summary>
+    /// 是否嘲讽
+    /// </summary>
+    public bool IsTaunt { get; set; }
+
+
+    // ----------------------------权重选择 Level1-----------------------------
+    /// <summary>
+    /// 选择地面单位权重
+    /// </summary>
+    public float SurfaceWeight { get; set; }
+
+    /// <summary>
+    /// 选择天空单位权重
+    /// </summary>
+    public float AirWeight { get; set; }
+
+    /// <summary>
+    /// 选择建筑权重
+    /// </summary>
+    public float BuildWeight { get; set; }
+
+
+    // ----------------------------权重选择 Level2-----------------------------
+
+    /// <summary>
+    /// 选择坦克权重
+    /// </summary>
+    public float TankWeight { get; set; }
+
+    /// <summary>
+    /// 选择轻型载具权重
+    /// </summary>
+    public float LVWeight { get; set; }
+
+    /// <summary>
+    /// 选择火炮权重
+    /// </summary>
+    public float CannonWeight { get; set; }
+
+    /// <summary>
+    /// 选择飞行器权重
+    /// </summary>
+    public float AirCraftWeight { get; set; }
+
+    /// <summary>
+    /// 选择步兵权重
+    /// </summary>
+    public float SoldierWeight { get; set; }
+
+
+    // ----------------------------权重选择 Level3-----------------------------
+    /// <summary>
+    /// 选择隐形单位权重
+    /// </summary>
+    public float HideWeight { get; set; }
+
+    /// <summary>
+    /// 选择钻地隐形单位权重
+    /// </summary>
+    public float HideZDWeight { get; set; }
+
+    /// <summary>
+    /// 选择嘲讽权重(这个值应该很大, 除非有反嘲讽效果的单位)
+    /// </summary>
+    public float TauntWeight { get; set; }
+
+
+    // ----------------------------权重选择 Level4-----------------------------
+
+
+    /// <summary>
+    /// 低生命权重
+    /// </summary>
+    public float HealthMinWeight { get; set; }
+
+    /// <summary>
+    /// 高生命权重
+    /// </summary>
+    public float HealthMaxWeight { get; set; }
+    
+    /// <summary>
+    /// 近位置权重
+    /// </summary>
+    public float DistanceMinWeight { get; set; }
+
+    /// <summary>
+    /// 远位置权重
+    /// </summary>
+    public float DistanceMaxWeight { get; set; }
+
+    /// <summary>
+    /// 角度权重
+    /// </summary>
+    public float AngleWeight { get; set; }
+
+
+
+    /// <summary>
+    /// 精准度
+    /// </summary>
+    public float Accuracy { get; set; }
+    /// <summary>
+    /// 散射半径
+    /// </summary>
+    public float ScatteringRadius { get; set; }
 
 
     // -------------------------------私有属性--------------------------------------
@@ -441,12 +769,46 @@ public class Member : ISelectWeightData, BaseMamber, IGraphical<Rectangle>
 public interface BaseMamber
 {
     // ----------------------------------暴露接口--------------------------------------
+    /// <summary>
+    /// 是否飞行
+    /// </summary>
+    bool IsAir { get; set; }
+
+    /// <summary>
+    /// 是否地面
+    /// </summary>
+    bool IsSurface { get; set; }
+
+    /// <summary>
+    /// 是否建筑
+    /// </summary>
+    bool IsBuild { get; set; }
+
+    /// <summary>
+    /// 第二级类型
+    /// 区分步兵, 坦克, 载具, 火炮, 飞行棋
+    /// </summary>
+    MemberItemType ItemType { get; set; }
+
+    /// <summary>
+    /// 是否隐形
+    /// </summary>
+    bool IsHide { get; set; }
+
+    /// <summary>
+    /// 是否钻地
+    /// </summary>
+    bool IsHideZD { get; set; }
+
+    /// <summary>
+    /// 是否嘲讽
+    /// </summary>
+    bool IsTaunt { get; set; }
     float Speed { get; set; }
     int MaxHealth { get; set; }
     int Health { get; set; }
     int Atack { get; set; }
     int Define { get; set; }
-    int MemberType { get; set; }
     int Diameter { get; set; }
     int ScanDiameter { get; set; }
     int TargetCount { get; set; }
@@ -454,8 +816,135 @@ public interface BaseMamber
     float Y { get; set; }
 
     /// <summary>
-    /// 目标点
+    /// 方向
     /// </summary>
     Vector3 Direction { get; set; }
+
+    /// <summary>
+    /// 精准度
+    /// </summary>
+    float Accuracy { get; set; }
+    /// <summary>
+    /// 散射半径
+    /// </summary>
+    float ScatteringRadius { get; set; }
     // ----------------------------------暴露接口--------------------------------------
+}
+
+
+
+/// <summary>
+/// 选择目标权重抽象类
+/// TODO 改成接口, 不适用抽象类
+/// </summary>
+public interface ISelectWeightData
+{
+    // Level 1, 2, 3所有值都是从-1 - 正无穷, -1为完全不理会, 0为不影响权重, 权重越大越重要
+    // Level 4的值 0 - 正无穷 不会出现完全不理会的情况
+
+
+    // ----------------------------权重选择 Level1-----------------------------
+    /// <summary>
+    /// 选择地面单位权重
+    /// </summary>
+    float SurfaceWeight { get; set; }
+
+    /// <summary>
+    /// 选择天空单位权重
+    /// </summary>
+    float AirWeight { get; set; }
+
+    /// <summary>
+    /// 选择建筑权重
+    /// </summary>
+    float BuildWeight { get; set; }
+
+    
+    // ----------------------------权重选择 Level1-----------------------------
+
+    /// <summary>
+    /// 选择坦克权重
+    /// </summary>
+    float TankWeight { get; set; }
+
+    /// <summary>
+    /// 选择轻型载具权重
+    /// </summary>
+    float LVWeight { get; set; }
+
+    /// <summary>
+    /// 选择火炮权重
+    /// </summary>
+    float CannonWeight { get; set; }
+
+    /// <summary>
+    /// 选择飞行器权重
+    /// </summary>
+    float AirCraftWeight { get; set; }
+
+    /// <summary>
+    /// 选择步兵权重
+    /// </summary>
+    float SoldierWeight { get; set; }
+
+
+    // ----------------------------权重选择 Level3-----------------------------
+    /// <summary>
+    /// 选择隐形单位权重
+    /// </summary>
+    float HideWeight { get; set; }
+
+    /// <summary>
+    /// 选择钻地隐形单位权重
+    /// </summary>
+    float HideZDWeight { get; set; }
+
+    /// <summary>
+    /// 选择嘲讽权重(这个值应该很大, 除非有反嘲讽效果的单位)
+    /// </summary>
+    float TauntWeight { get; set; }
+
+
+    // ----------------------------权重选择 Level4-----------------------------
+
+    
+    /// <summary>
+    /// 低生命权重
+    /// </summary>
+    float HealthMinWeight { get; set; }
+
+    /// <summary>
+    /// 高生命权重
+    /// </summary>
+    float HealthMaxWeight { get; set; }
+
+
+    /// <summary>
+    /// 近位置权重
+    /// </summary>
+    float DistanceMinWeight { get; set; }
+
+    /// <summary>
+    /// 远位置权重
+    /// </summary>
+    float DistanceMaxWeight { get; set; }
+
+    /// <summary>
+    /// 角度权重
+    /// </summary>
+    float AngleWeight { get; set; }
+
+
+}
+
+/// <summary>
+/// 单位类型
+/// </summary>
+public enum MemberItemType
+{
+    Tank = 0,
+    LV,
+    Cannon,
+    Aircraft,
+    Soldier
 }

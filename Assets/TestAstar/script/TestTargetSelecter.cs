@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LuaInterface;
 
 
 /// <summary>
@@ -44,7 +45,19 @@ public class TestTargetSelecter : MonoBehaviour {
     /// <summary>
     /// 颜对应表
     /// </summary>
-    private Dictionary<int, Color> typeColor = new Dictionary<int, Color>(); 
+    private Dictionary<int, Color> typeColor = new Dictionary<int, Color>();
+
+
+    private LuaState L = null;
+
+    private LuaFunction LFunc = null;
+
+    private LuaTable TestData = null;
+
+    /// <summary>
+    /// 单位数据列表
+    /// </summary>
+    //private List<Dictionary<string, object>>  itemDataList = new List<Dictionary<string, object>>();
 
     
     void Start ()
@@ -61,6 +74,8 @@ public class TestTargetSelecter : MonoBehaviour {
         typeColor.Add(4, Color.blue);
         typeColor.Add(5, Color.cyan);
 
+        // 初始化Lua
+        //InitLua();
     }
 
 	void Update () {
@@ -72,12 +87,30 @@ public class TestTargetSelecter : MonoBehaviour {
 	    MemberMove();
 
         // 搜寻目标
-	    ScanTarget();
-        
+        ScanTarget();
+	    //SacanTargetFromLua();
+
         // 操作控制
-	    Control();
+        Control();
 
 	}
+
+    /// <summary>
+    /// 初始化Lua
+    /// </summary>
+    //private void InitLua()
+    //{
+    //    // TODO LUA需要销毁
+    //    L = new LuaState();
+    //    L.Start();
+    //    // 读取lua文件
+    //    L.DoFile( @"D:\project\Project1\GameProject\Assets\Lua\targetSelect.lua");
+    //    // 获得lua方法
+    //    LFunc = L.GetFunction("SearchTargetWithJson");
+
+    //    // LFunc = L.GetFunction("String");
+    //    TestData = L.GetTable("testData");
+    //}
 
 
     /// <summary>
@@ -140,10 +173,10 @@ public class TestTargetSelecter : MonoBehaviour {
         // 根据对象的搜寻外径获取对向列表
         var itemRect = new Rectangle(item.X - item.ScanDiameter/2f, item.Y - item.ScanDiameter/2f, item.ScanDiameter,
                 item.ScanDiameter);
-            DrawRect(itemRect, Color.red);
+        Utils.DrawRect(itemRect, Color.red);
 
             // 根据策略筛选目标
-            var targetList = TargetFilter(item, MemberList.QuadTree);
+            var targetList = TargetSelecter.Single.TargetFilter(item, MemberList.QuadTree);
 
             // 连线
         foreach (var targetItem in targetList)
@@ -154,85 +187,88 @@ public class TestTargetSelecter : MonoBehaviour {
     }
 
     /// <summary>
-    /// 筛选对象
-    /// TODO 优化
+    /// 搜索目标从lua中获得
     /// </summary>
-    /// <typeparam name="T">对象类型. 必须继承</typeparam>
-    /// <param name="searchObj">搜索对象</param>
-    /// <param name="quadTree">四叉树</param>
-    /// <returns></returns>
-    private IList<T> TargetFilter<T>(T searchObj, QuadTree<T> quadTree) where T : ISelectWeightData, BaseMamber, IGraphical<Rectangle>
+    private void SacanTargetFromLua()
     {
-        IList<T> result = null;
-        if (searchObj != null && quadTree != null)
+        var item = _leader;
+        //foreach (var item in MemberList.List)
+        //{
+
+
+        //LuaTable tableData = new LuaTable(TestData.GetReference(), L);
+        StringBuilder sbForTableData = new StringBuilder();
+
+        // 搜索单位的搜索范围矩形
+        var itemRect = new Rectangle(item.X - item.ScanDiameter/2f, item.Y - item.ScanDiameter/2f, item.ScanDiameter,
+            item.ScanDiameter);
+        // 搜索范围内的其他单位
+        var targetList = MemberList.QuadTree.GetScope(itemRect);
+        // 绘制搜索范围 
+        Utils.DrawRect(itemRect, Color.red);
+
+        sbForTableData.Append("{'data' : [");
+        //  代码解析为string
+        for (var i = 0; i < targetList.Count; i++)
         {
-            var inScope =
-                quadTree.GetScope(new Rectangle(searchObj.X - searchObj.ScanDiameter / 2f, searchObj.Y - searchObj.ScanDiameter / 2f,
-                    searchObj.ScanDiameter,
-                    searchObj.ScanDiameter));
-
-            var targetCount = searchObj.TargetCount;
-            // 目标列表Array
-            var targetArray = new T[targetCount];
-            // 目标权重值
-            var weightKeyArray = new float[targetCount];
-            // 根据各项权重获取合适的目标
-            // 生命值权重
-            var healthWeight = searchObj.HealthWeight;
-            // 角度权重
-            var angleWeight = searchObj.AngleWeight;
-            // 距离权重
-            var distanceWeight = searchObj.DistanceWeight;
-            // 等级权重
-            //var levelWeight = searchObj.LevelWeight;
-
-            for (var i = 0; i < inScope.Count; i++)
+            // 排除自己
+            var member = targetList[i];
+            if (item.Equals(member))
             {
-                var item = inScope[i];
-                if (item.Equals(searchObj))
-                {
-                    continue;
-                }
-                // 各项权重具体实现
-                // 从列表中找到几项权重值最高的目标个数个单位
-                // 将各项值标准化, 然后乘以权重求和, 得到最高值
-
-                // 生命值标准化: 100 - 当前生命值/最大生命值*100
-                float healthStand = 100 - item.Health * 100f / item.MaxHealth;
-                // 距离标准化: 100 - 当前距离/最大距离*100
-                float distanceStand = 100 -
-                                    new Vector2(searchObj.X - item.X, searchObj.Y - item.Y).magnitude * 100f /
-                                    searchObj.ScanDiameter;
-                // 角度标准化: 100 - 当前角度 / 180 * 100
-                var angle = Math.Acos(Vector3.Dot(searchObj.Direction.normalized,
-                    new Vector3(item.X - searchObj.X, 0, item.Y - searchObj.Y).normalized));
-                float angleStand = 100 -
-                                 (float)angle * 100f / 180;
-
-                // TODO 各项为插入式结构
-                // 求权重和
-                var sumWeight = healthStand*healthWeight + distanceStand*distanceWeight + angleStand*angleWeight;
-                // 比对列表中的值, 大于其中某项值则将其替换位置并讲其后元素向后推一位.
-                for (var j = 0; j < weightKeyArray.Length; j++)
-                {
-                    if (sumWeight > weightKeyArray[j])
-                    {
-                        for (var k = weightKeyArray.Length - 1; k > j; k--)
-                        {
-                            weightKeyArray[k] = weightKeyArray[k - 1];
-                            targetArray[k] = targetArray[k - 1];
-                        }
-                        weightKeyArray[j] = sumWeight;
-                        targetArray[j] = item;
-                        break;
-                    }
-                }
+                continue;
             }
 
-            result = targetArray.Where(targetItem => targetItem != null).ToList();
+            sbForTableData.Append("{");
+            sbForTableData.Append("'Name' : " + member.Name + ",");
+            sbForTableData.Append("'Surface' : " + (member.IsSurface ? 1 : 0) + ",");
+            sbForTableData.Append("'Air' : " + (member.IsAir ? 1 : 0) + ",");
+            sbForTableData.Append("'Build' : " + (member.IsBuild ? 1 : 0) + ",");
+                                  
+            sbForTableData.Append("'Tank' : " + (member.ItemType == MemberItemType.Tank ? 1 : 0) + ",");
+            sbForTableData.Append("'LV' : " + (member.ItemType == MemberItemType.LV ? 1 : 0) + ",");
+            sbForTableData.Append("'Cannon' : " + (member.ItemType == MemberItemType.Cannon ? 1 : 0) + ",");
+            sbForTableData.Append("'Aircraft' : " + (member.ItemType == MemberItemType.Aircraft ? 1 : 0) + ",");
+            sbForTableData.Append("'Soldier' : " + (member.ItemType == MemberItemType.Soldier ? 1 : 0) + ",");
+                                  
+            sbForTableData.Append("'HealthMax' : " + member.MaxHealth + ",");
+            sbForTableData.Append("'Health' : " + member.Health + ",");
+            sbForTableData.Append("'Angle' : " + Vector3.Angle(item.Direction, member.Direction) + ",");
+            sbForTableData.Append("'Position' : { 'x' : " + member.X + ",'y' : " +  member.Y + "}");
+            sbForTableData.Append("}");
+            if (i != targetList.Count - 1)
+            {
+                sbForTableData.Append(",");
+            }
         }
-        return result;
+
+        sbForTableData.Append("]}");
+
+        
+        //Debug.Log(sbForTableData);
+        TestData["jsonData"] = sbForTableData.ToString();
+        // TODO func需要销毁
+        LFunc.BeginPCall();
+        LFunc.PushArgs(new object[]{TestData, 10000});
+        LFunc.PCall();
+        LFunc.EndPCall();
+        // Debug.Log(result[0]);
+        // 将数据传入
+        
+        //var table = (LuaTable)result[0];
+        //for (var i = 1; i <= table.Length; i++)
+        //{
+        //    var oneTargetData = ((LuaTable)table[i]);
+        //    // var wight = oneTargetData["wight"];
+        //    var x = (double)((LuaTable)((LuaTable)oneTargetData["target"])["Position"])["x"];
+        //    var y = (double)((LuaTable)((LuaTable)oneTargetData["target"])["Position"])["y"];
+        //    // Debug.Log(((LuaTable)oneTargetData["target"])["Name"]);
+        //    // 连线各个目标
+        //    Debug.DrawLine(new Vector3(_leader.X, 0, _leader.Y), new Vector3((float)x, 0, (float)y));
+        //    //Debug.Log(i + ":" + wight);
+        //}
+
     }
+
 
     /// <summary>
     /// 创建测试单元
@@ -247,19 +283,62 @@ public class TestTargetSelecter : MonoBehaviour {
             var member = new Member();
             var x = random.Next(0, MapWidth);
             var y = random.Next(0, MapHeight);
+            member.Name = "member" + i;
 
+            member.Diameter = i%5 + 1;
             member.Name = "" + i;
             member.X = x;
             member.Y = y;
-            member.MemberType = i%5 + 1;
             member.Health = i % 5 + 1;
+
+            member.ScanDiameter = 100;
+            member.MaxHealth = 10;
+
+            member.IsSurface = random.Next(1) > 0;
+            member.IsAir = !member.IsSurface;
+            member.IsBuild = random.Next(1) > 0;
+
+            member.ItemType = (MemberItemType)random.Next(4);
+
+            member.IsHide = random.Next(1) > 0;
+            member.IsHideZD = random.Next(1) > 0;
+            member.IsTaunt = random.Next(1) > 0;
+
             // 随机给方向
             member.Direction = new Vector3(random.Next(1, 100), 0, random.Next(1, 100));
+
+
+            // 选择目标数据
+            member.AirWeight = -1;
+            member.BuildWeight = 100;
+            member.SurfaceWeight = 100;
+
+            member.TankWeight = 10;
+            member.LVWeight = 10;
+            member.CannonWeight = 10;
+            member.AirCraftWeight = 10;
+            member.SoldierWeight = 10;
+
+            member.HideWeight = -1;
+            member.HideZDWeight = -1;
+            member.TauntWeight = 1000;
+
+            member.HealthMaxWeight = 0;
+            member.HealthMinWeight = 10;
+            member.AngleWeight = 10;
+            member.DistanceMaxWeight = 0;
+            member.DistanceMinWeight = 10;
+
+            member.Accuracy = 0.9f;
+            member.ScatteringRadius = 10;
+
+            member.TargetCount = 10;
             MemberList.Add(member);
             if (i == 0)
             {
                 _leader = member;
             }
+
         }
     }
 
@@ -270,19 +349,6 @@ public class TestTargetSelecter : MonoBehaviour {
     {
         MemberList.Clear();
     }
-    
-
-    /// <summary>
-    /// 绘制矩形
-    /// </summary>
-    /// <param name="rectangle"></param>
-    private void DrawRect(Rectangle rectangle, Color color)
-    {
-        Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
-        Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
-        Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
-        Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
-    }
 
     /// <summary>
     /// 绘制单元位置与四叉树分区情况
@@ -292,12 +358,12 @@ public class TestTargetSelecter : MonoBehaviour {
     private void DrawQuadTreeLine<T>(QuadTree<T> quadTree) where T : BaseMamber, IGraphical<Rectangle>
     {
         // 绘制四叉树边框
-        DrawRect(quadTree.GetRectangle(), Color.white);
+        Utils.DrawRect(quadTree.GetRectangle(), Color.white);
         // 遍历四叉树内容
         foreach (var item in quadTree.GetItemList())
         {
             // 绘制当前对象
-            DrawRect(item.GetGraphical(), typeColor[item.MemberType]);
+            Utils.DrawRect(item.GetGraphical(), typeColor[1]);
             // 绘制前进方向
             var position = new Vector3(item.X, 0, item.Y);
             Debug.DrawLine(position, position + item.Direction.normalized * 2, Color.red);

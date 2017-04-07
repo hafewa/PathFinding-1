@@ -209,6 +209,19 @@ public class Utils
         return head;
     }
 
+    /// <summary>
+    /// 回执矩形
+    /// </summary>
+    /// <param name="rectangle"></param>
+    /// <param name="color"></param>
+    public static void DrawRect(Rectangle rectangle, Color color)
+    {
+        Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
+        Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
+        Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
+        Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
+    }
+
     // ---------------------------文件操作----------------------------
 
     /// <summary>
@@ -285,6 +298,22 @@ public class Utils
 
         return theta1;
     }
+
+    /// <summary>
+    /// 求两点间距离2d
+    /// </summary>
+    /// <param name="x1">点1x</param>
+    /// <param name="y1">点1y</param>
+    /// <param name="x2">点2x</param>
+    /// <param name="y2">点2y</param>
+    /// <returns>两点距离</returns>
+    public static float GetTwoPointDistance2D(float x1, float y1, float x2, float y2)
+    {
+        var xOffset = x1 - x2;
+        var yOffset = y1 - y2;
+        return (float)Math.Sqrt(xOffset*xOffset + yOffset*yOffset);
+    }
+
 
     // ---------------------静态方法-------------------------
 
