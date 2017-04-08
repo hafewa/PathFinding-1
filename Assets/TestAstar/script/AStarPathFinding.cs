@@ -7,6 +7,29 @@ using UnityEngine;
 /// </summary>
 public class AStarPathFinding
 {
+
+
+    /// <summary>
+    /// 节点对比方法
+    /// </summary>
+    private static Func<Node, Node, int> compareTo = (item1, item2) =>
+        {
+            if (item1 == null)
+            {
+                item1 = item2;
+                return 1;
+            }
+            if (item2 == null)
+            {
+                item2 = item1;
+                return -1;
+            }
+            if (item1.F > item2.F)
+            {
+                return -1;
+            }
+            return item1.F < item2.F ? 1 : 0;
+        };
     // TODO 二叉堆加入
     /// <summary>
     /// 寻找路径
@@ -19,6 +42,7 @@ public class AStarPathFinding
     /// <param name="diameterX">物体X轴宽度</param>
     /// <param name="diameterY">物体Y轴宽度</param>
     /// <param name="isJumpPoint">是否为跳跃式点, 如果为true 则路径只会给出拐点处的关键点</param>
+    /// <param name="completeCallback">结束回调函数</param>
     /// <returns>返回路径点列表, 如果列表长度为0则没有路径</returns>
     public static IList<Node> SearchRoad(int[][] map, int startX, int startY, int endX, int endY, int diameterX, int diameterY,
         bool isJumpPoint = false, Action completeCallback = null)
@@ -49,27 +73,7 @@ public class AStarPathFinding
         int g;
         Node[] surroundPointArray;
         Node currentPoint;
-
-        // 节点对比方法
-        Func<Node, Node, int> compareTo = (item1, item2) =>
-        {
-            if (item1 == null)
-            {
-                item1 = item2;
-                return 1;
-            }
-            if (item2 == null)
-            {
-                item2 = item1;
-                return -1;
-            }
-            if (item1.F > item2.F)
-            {
-                return -1;
-            }
-            return item1.F < item2.F ? 1 : 0;
-        };
-
+        
         do
         {
             counter++;
@@ -351,4 +355,43 @@ public class AStarPathFinding
         return result;
     }
 
+}
+
+/// <summary>
+/// 二叉堆列表
+/// </summary>
+public class BinaryHeapList<T>
+{
+    /// <summary>
+    /// 单位列表
+    /// </summary>
+    private List<T> itemList = new List<T>();
+
+    /// <summary>
+    /// 对比方法
+    /// </summary>
+    private Func<T, T> compTo = null;
+
+
+    /// <summary>
+    /// 初始化二叉堆列表
+    /// </summary>
+    /// <param name="compTo">对比大小方法, arg1>arg2返回-1, 反之返回1, 相等返回0</param>
+    public BinaryHeapList(Func<T, T> compTo)
+    {
+        this.compTo = compTo;
+    }  
+
+    public void Push(T item)
+    {
+        
+    }
+
+
+    public T Pop()
+    {
+        T result = default (T);
+
+        return result;
+    }
 }
