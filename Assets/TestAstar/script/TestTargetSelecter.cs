@@ -301,7 +301,6 @@ public class TestTargetSelecter : MonoBehaviour {
             member.ItemType = (MemberItemType)random.Next(4);
 
             member.IsHide = random.Next(1) > 0;
-            member.IsHideZD = random.Next(1) > 0;
             member.IsTaunt = random.Next(1) > 0;
 
             // 随机给方向
@@ -320,7 +319,6 @@ public class TestTargetSelecter : MonoBehaviour {
             member.SoldierWeight = 10;
 
             member.HideWeight = -1;
-            member.HideZDWeight = -1;
             member.TauntWeight = 1000;
 
             member.HealthMaxWeight = 0;

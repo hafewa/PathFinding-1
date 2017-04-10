@@ -222,6 +222,19 @@ public class Utils
         Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
     }
 
+
+    /// <summary>
+    /// 获取node的key值
+    /// </summary>
+    /// <param name="x">位置x</param>
+    /// <param name="y">位置y</param>
+    /// <returns>key值</returns>
+    public static long GetKey(long x, long y)
+    {
+        var result = (x << 32) + y;
+        return result;
+    }
+
     // ---------------------------文件操作----------------------------
 
     /// <summary>

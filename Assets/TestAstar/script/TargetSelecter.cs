@@ -130,15 +130,6 @@ public class TargetSelecter
                     }
                     sumWeight += searchObj.HideWeight;
                 }
-                // 钻地隐形单位
-                if (item.IsHideZD)
-                {
-                    if (searchObj.HideZDWeight < 0)
-                    {
-                        continue;
-                    }
-                    sumWeight += searchObj.HideZDWeight;
-                }
                 // 嘲讽单位
                 if (item.IsTaunt)
                 {
@@ -575,11 +566,6 @@ public class Member : ISelectWeightData, BaseMamber, IGraphical<Rectangle>
     public bool IsHide { get; set; }
 
     /// <summary>
-    /// 是否钻地
-    /// </summary>
-    public bool IsHideZD { get; set; }
-
-    /// <summary>
     /// 是否嘲讽
     /// </summary>
     public bool IsTaunt { get; set; }
@@ -635,11 +621,6 @@ public class Member : ISelectWeightData, BaseMamber, IGraphical<Rectangle>
     /// 选择隐形单位权重
     /// </summary>
     public float HideWeight { get; set; }
-
-    /// <summary>
-    /// 选择钻地隐形单位权重
-    /// </summary>
-    public float HideZDWeight { get; set; }
 
     /// <summary>
     /// 选择嘲讽权重(这个值应该很大, 除非有反嘲讽效果的单位)
@@ -796,11 +777,6 @@ public interface BaseMamber
     bool IsHide { get; set; }
 
     /// <summary>
-    /// 是否钻地
-    /// </summary>
-    bool IsHideZD { get; set; }
-
-    /// <summary>
     /// 是否嘲讽
     /// </summary>
     bool IsTaunt { get; set; }
@@ -893,11 +869,6 @@ public interface ISelectWeightData
     /// 选择隐形单位权重
     /// </summary>
     float HideWeight { get; set; }
-
-    /// <summary>
-    /// 选择钻地隐形单位权重
-    /// </summary>
-    float HideZDWeight { get; set; }
 
     /// <summary>
     /// 选择嘲讽权重(这个值应该很大, 除非有反嘲讽效果的单位)
