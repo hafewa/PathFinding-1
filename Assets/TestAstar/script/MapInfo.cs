@@ -181,13 +181,14 @@ public class Node : IComparable<Node>
         G = g;
         H = h;
     }
+    // 由get set修改为公共属性, get set在寻路过程中效率有瓶颈
+    public int X = 0;
+    public int Y = 0;
 
-    public int X { get; set; }
-    public int Y { get; set; }
-    public int G { get; set; }
-    public int H { get; set; }
-    public int F { get; set; }
-    public Node Parent { get; set; }
+    public int G = 0;
+    public int H = 0;
+    public int F = 0;
+    public Node Parent = null;
 
     public override string ToString()
     {

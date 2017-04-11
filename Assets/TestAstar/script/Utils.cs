@@ -46,6 +46,16 @@ public class Utils
     public const int Accessibility = 0;
 
     /// <summary>
+    /// 已关闭
+    /// </summary>
+    public const int Closed = -1;
+
+    /// <summary>
+    /// 已打开
+    /// </summary>
+    public const int Opened = -1;
+
+    /// <summary>
     /// 弧度转角度常数
     /// </summary>
     public static readonly float RadianToAngle = 180/(float)Math.PI;

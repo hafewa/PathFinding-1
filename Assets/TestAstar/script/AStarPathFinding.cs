@@ -13,23 +13,19 @@ public class AStarPathFinding
     /// 节点对比方法
     /// </summary>
     private static Func<Node, Node, int> compareTo = (item1, item2) =>
+    {
+        var f1 = item1.F;
+        var f2 = item2.F;
+        if (f1 < f2)
         {
-            if (item1 == null)
-            {
-                //item1 = item2;
-                return -1;
-            }
-            if (item2 == null)
-            {
-                //item2 = item1;
-                return 1;
-            }
-            if (item1.F < item2.F)
-            {
-                return -1;
-            }
-            return item1.F > item2.F ? 1 : 0;
-        };
+            return -1;
+        }
+        else if (f1 > f2)
+        {
+            return 1;
+        }
+        return 0;
+    };
     // TODO 二叉堆加入
     /// <summary>
     /// 寻找路径
@@ -50,16 +46,22 @@ public class AStarPathFinding
         // 结束节点
         Node endNode = null;
         var now = Time.realtimeSinceStartup;
+        // 行列数量
+        var rowCount = map.Length;
+        var colCount = map[0].Length;
+        // 复制数据, 用于标记关闭列表
+        var closePathMap = new int[rowCount][];
+        map.CopyTo(closePathMap, 0);
 
         //IDictionary<long, Node> openDic= new Dictionary<long, Node>();
-        BinaryHeapList<Node> openBHList = new BinaryHeapList<Node>(compareTo);
-        IDictionary<long, Node> closeDic = new Dictionary<long, Node>();
+        BinaryHeapList<Node> openBHList = new BinaryHeapList<Node>(compareTo, rowCount, colCount);
+        // IDictionary<long, Node> closeDic = new Dictionary<long, Node>();
         // 初始化开始节点
         openBHList.Push(new Node(startX, startY));
         // openDic.Add(GetKey(startX, startY), new Node(startX, startY));
         // openList.Enqueue(new Node(startX, startY));
         // 如果搜索次数大于(w+h) * 4 则停止搜索
-        var maxSearchCount = (map.Length + map[0].Length) * 40;
+        var maxSearchCount = (rowCount + colCount) * 40;
 
         // 计算结束偏移
         endX = endX - diameterX;
@@ -85,45 +87,63 @@ public class AStarPathFinding
             }
             //currentPoint = Utils.GetNodeFromListWithCompare(openDic.Values, false, compareTo);
             // 删除该节点
-            var keyForCurrentPoing = Utils.GetKey(currentPoint.X, currentPoint.Y);
+            // var keyForCurrentPoing = Utils.GetKey(currentPoint.X, currentPoint.Y);
             //openDic.Remove(keyForCurrentPoing);
             // 将当前节点放入关闭列表
-            if (!closeDic.ContainsKey(keyForCurrentPoing))
+            //if (!closeDic.ContainsKey(keyForCurrentPoing))
+            //{
+            //    closeDic.Add(keyForCurrentPoing, currentPoint);
+            //}
+            // 关闭节点
+            if (closePathMap[currentPoint.Y][currentPoint.X] == Utils.Accessibility)
             {
-                closeDic.Add(keyForCurrentPoing, currentPoint);
+                closePathMap[currentPoint.Y][currentPoint.X] = Utils.Closed;
             }
             // 获取当前节点周围的节点
             surroundPointArray = SurroundPoint(currentPoint);
 
             foreach (Node surroundPoint in surroundPointArray)
             {
-                // 斜向是否可移动
-                // 判断周围节点合理性
-                if (ExistInList(surroundPoint.X, surroundPoint.Y, closeDic) == null && IsPassable(map, surroundPoint, currentPoint, diameterX, diameterY))
+                try
                 {
-                    // 计算G值 上下左右为10, 四角为14
-                    g = currentPoint.G + (((currentPoint.X - surroundPoint.X) * (currentPoint.Y - surroundPoint.Y)) == 0 ? 10 : 14);
+                    // 斜向是否可移动
+                    // 判断周围节点合理性
+                    if (ValidPos(surroundPoint.X, surroundPoint.Y, colCount, rowCount) &&
+                        closePathMap[surroundPoint.Y][surroundPoint.X] != Utils.Closed &&
+                        IsPassable(map, surroundPoint, currentPoint, diameterX, diameterY))
+                    {
+                        // 计算G值 上下左右为10, 四角为14
+                        g = currentPoint.G +
+                            (((currentPoint.X - surroundPoint.X)*(currentPoint.Y - surroundPoint.Y)) == 0 ? 10 : 14);
 
-                    // 该点是否在开启列表中
-                    var node = ExistInList(surroundPoint.X, surroundPoint.Y, openBHList.GetItemDic);
-                    if (node == null)
-                    {
-                        // 计算H值, 通过水平和垂直距离确定
-                        surroundPoint.H = (int)(Math.Sqrt(Math.Pow(endX - surroundPoint.X, 2) + Math.Pow(endY - surroundPoint.Y, 2))) * 10;//Math.Abs(endX - surroundPoint.X)*10 + Math.Abs(endY - surroundPoint.Y)*10;//
-                        surroundPoint.G = g;
-                        surroundPoint.F = surroundPoint.H + surroundPoint.G;
-                        surroundPoint.Parent = currentPoint;
-                        openBHList.Push(surroundPoint);
-                    }
-                    else // 存在于开启列表, 比较当前的G值与之前的G值大小
-                    {
-                        if (g < node.G)
+                        // 该点是否在开启列表中
+                        var node = openBHList.OpenArray[surroundPoint.Y][surroundPoint.X];
+                        if (node == null)
                         {
-                            node.Parent = currentPoint;
-                            node.G = g;
-                            node.F = g + node.H;
+                            // 计算H值, 通过水平和垂直距离确定
+                            surroundPoint.H =
+                                (int)
+                                    (Math.Sqrt(Math.Pow(endX - surroundPoint.X, 2) + Math.Pow(endY - surroundPoint.Y, 2)))*
+                                10; //Math.Abs(endX - surroundPoint.X)*10 + Math.Abs(endY - surroundPoint.Y)*10;//
+                            surroundPoint.G = g;
+                            surroundPoint.F = surroundPoint.H + surroundPoint.G;
+                            surroundPoint.Parent = currentPoint;
+                            openBHList.Push(surroundPoint);
+                        }
+                        else // 存在于开启列表, 比较当前的G值与之前的G值大小
+                        {
+                            if (g < node.G)
+                            {
+                                node.Parent = currentPoint;
+                                node.G = g;
+                                node.F = g + node.H;
+                            }
                         }
                     }
+                }
+                catch
+                {
+                    int i = 0;
                 }
             }
 
@@ -346,6 +366,23 @@ public class AStarPathFinding
         return result;
     }
 
+    /// <summary>
+    /// 验证节点位置是否有效
+    /// </summary>
+    /// <param name="x">位置x</param>
+    /// <param name="y">位置y</param>
+    /// <param name="mapWidth">地图宽度</param>
+    /// <param name="mapHeight">地图高度</param>
+    /// <returns>是否有效</returns>
+    private static bool ValidPos(int x, int y, int mapWidth, int mapHeight)
+    {
+        if (x < 0 || y < 0 || x >= mapWidth || y >= mapHeight)
+        {
+            return false;
+        }
+        return true;
+    }
+
 
 
 }
@@ -367,19 +404,27 @@ public class BinaryHeapList<T> where T : Node
     public int Count { get; private set; }
 
     /// <summary>
-    /// 单位字典, key为(x 左移 32) + y
+    /// open列表
     /// </summary>
-    public IDictionary<long, T> GetItemDic
+    public Node[][] OpenArray
     {
-        get
-        {
-            if (isOriginal)
-            {
-                return itemDic;
-            }
-            return null;
-        }
-    } 
+        get { return openPath; }
+    }
+
+    ///// <summary>
+    ///// 单位字典, key为(x 左移 32) + y
+    ///// </summary>
+    //public IDictionary<long, T> GetItemDic
+    //{
+    //    get
+    //    {
+    //        if (isOriginal)
+    //        {
+    //            return itemDic;
+    //        }
+    //        return null;
+    //    }
+    //} 
 
 
     ///// <summary>
@@ -407,10 +452,10 @@ public class BinaryHeapList<T> where T : Node
     /// </summary>
     private bool hasValue = false;
 
-    /// <summary>
-    /// 单位字典, key为(x 左移 32) + y
-    /// </summary>
-    private IDictionary<long, T> itemDic = null;
+    ///// <summary>
+    ///// 单位字典, key为(x 左移 32) + y
+    ///// </summary>
+    //private IDictionary<long, T> itemDic = null;
 
     /// <summary>
     /// 单位数组, 用于二叉堆存储
@@ -428,20 +473,44 @@ public class BinaryHeapList<T> where T : Node
     /// </summary>
     private int arrayPos = 0;
 
+    /// <summary>
+    /// open列表
+    /// </summary>
+    private Node[][] openPath = null;
+
+    /// <summary>
+    /// 行数
+    /// </summary>
+    private int rowCount = 0;
+
+    /// <summary>
+    /// 列数
+    /// </summary>
+    private int colCount = 0;
+
 
     /// <summary>
     /// 初始化二叉堆列表
     /// </summary>
     /// <param name="compTo">对比大小方法, arg1>arg2返回-1, 反之返回1, 相等返回0</param>
-    /// <param name="isOrg">是否为源</param>
-    public BinaryHeapList(Func<T, T, int> compTo, bool isOriginal = true)
+    /// <param name="isOriginal">是否为源</param>
+    /// <param name="rowCount">行数</param>
+    /// <param name="colCount">列数</param>
+    public BinaryHeapList(Func<T, T, int> compTo, int rowCount, int colCount, bool isOriginal = true)
     {
         this.compTo = compTo;
-        itemArray = new T[1024];
+        itemArray = new T[10240];
         if (isOriginal)
         {
-            itemDic = new Dictionary<long, T>();
+            //itemDic = new Dictionary<long, T>();
             this.isOriginal = true;
+        }
+
+        // 初始化open列表
+        openPath = new Node[rowCount][];
+        for (var i = 0; i < rowCount; i++)
+        {
+            openPath[i] = new Node[colCount];
         }
     }
 
@@ -465,70 +534,13 @@ public class BinaryHeapList<T> where T : Node
         // TODO 判断是否空间足够, 不足则重新分配空间
 
 
-
-        // 数据本地化, 避免数据修改后向外扩散
-        //var localItem = item;
-        //// 值不能为null
-        //if (localItem == null)
-        //{
-        //    return;
-        //}
-        //// 判断当前节点值
-        //// 无值则放入当前节点
-        //if (!hasValue)
-        //{
-        //    Value = localItem;
-        //    hasValue = true;
-        //    return;
-        //}
-        //else
-        //{
-        //    // 与当前节点对比
-        //    // 将小的放入子节点
-        //    if (compTo(Value, localItem) > 0)
-        //    {
-        //        var tmpItem = Value;
-        //        Value = localItem;
-        //        localItem = tmpItem;
-        //    }
-        //}
-
-        //// 有值则放入判断放入子树
-        //// 判断左右子树是否为空, 为空则创建子树并将值放入
-        //if (leftSubTree == null)
-        //{
-        //    leftSubTree = new BinaryHeapList<T>(compTo, false);
-        //    leftSubTree.Push(localItem);
-        //    return;
-        //}
-        //if (rightSubTree == null)
-        //{
-        //    rightSubTree = new BinaryHeapList<T>(compTo, false);
-        //    rightSubTree.Push(localItem);
-        //    return;
-        //}
-
-        //// 不为空则判断与左右子树对比大小, 如果大于左右子树, 将小的放入其子树
-        ////var compareLeft = compTo(leftSubTree.Value, localItem);
-        ////var compareRight = compTo(rightSubTree.Value, localItem);
-        //var compareTwoNode = compTo(leftSubTree.Value, rightSubTree.Value);
-
-        //if (compareTwoNode > 0)
-        //{
-        //    // 放入左子树
-        //    leftSubTree.Push(localItem);
-        //}
-        //else
-        //{
-        //    // 放入右子树
-        //    rightSubTree.Push(localItem);
-        //}
         arrayPos++;
         Count++;
         // 加入单元列表
         if (isOriginal)
         {
-            itemDic.Add(Utils.GetKey(item.X, item.Y), item);
+            openPath[item.Y][item.X] = item;
+            // itemDic.Add(Utils.GetKey(item.X, item.Y), item);
         }
     }
 
@@ -545,75 +557,12 @@ public class BinaryHeapList<T> where T : Node
         itemArray[0] = itemArray[lastPos];
         // 然后调整数组
         FileterDown(0, lastPos);
-        // 将最上的节点value返回, 并将子树的内容向上退一格
-        //if (hasValue)
-        //{
-        //bool popLeft = false;
-        //bool popRight = false;
-        //// result = 当前节点值
-        //result = Value;
-        //// 将子节点值向上
-        //// 判断两子树是否都不为空
-        //if (leftSubTree != null && rightSubTree != null)
-        //{
-        //    // 对比左右子树
-        //    var compareTwoNode = compTo(leftSubTree.Value, rightSubTree.Value);
-        //    if (compareTwoNode > 0)
-        //    {
-        //        // 将右节点上移
-        //        popRight = true;
-        //    }
-        //    else
-        //    {
-        //        // 将左节点上移
-        //        popLeft = true;
-        //    }
-        //}
-        //else
-        //{
-        //    if (leftSubTree != null)
-        //    {
-        //        popLeft = true;
-        //    }
-        //    else if (rightSubTree != null)
-        //    {
-        //        popRight = true;
-        //    }
-        //}
-
-        //if (popRight)
-        //{
-        //    // 将右节点上移
-        //    Value = rightSubTree.Pop();
-        //    // TODO 子节点无值无子节点将子节点放入缓存池
-        //    // 将子节点置为空
-        //    if (!rightSubTree.hasValue)
-        //    {
-        //        rightSubTree = null;
-        //    }
-        //}
-        //else if (popLeft)
-        //{
-        //    // 将左节点上移
-        //    Value = leftSubTree.Pop();
-        //    // TODO 子节点无值无子节点将子节点放入缓存池
-        //    // 将子节点置为空
-        //    if (!leftSubTree.hasValue)
-        //    {
-        //        leftSubTree = null;
-        //    }
-        //}
-        //else
-        //{
-        //    // 如果两个节点都为空
-        //    hasValue = false;
-        //    Value = default(T);
-        //}
 
         // 从单位列表中删除该单位
         if (isOriginal)
         {
-            itemDic.Remove(Utils.GetKey(result.X, result.Y));
+            openPath[result.Y][result.X] = null;
+            // itemDic.Remove(Utils.GetKey(result.X, result.Y));
         }
         //}
         Count--;
@@ -630,7 +579,7 @@ public class BinaryHeapList<T> where T : Node
     {
         var current = start;
         // 获取父节点位置
-        var parent = (current - 1)/2;
+        var parent = (current - 1)>>1;
         // 当前节点值
         var item = itemArray[current];
         while (current > 0)
@@ -646,7 +595,7 @@ public class BinaryHeapList<T> where T : Node
                 // 节点上移
                 itemArray[current] = itemArray[parent];
                 current = parent;
-                parent = (parent - 1)/2;
+                parent = (parent - 1)>>1;
             }
         }
 
@@ -663,7 +612,7 @@ public class BinaryHeapList<T> where T : Node
         // 当前节点
         var current = start;
         // 左子节点
-        var left = current*2 + 1;
+        var left = (current<<1) + 1;
         // 当前节点值
         var item = itemArray[current];
 
@@ -684,7 +633,7 @@ public class BinaryHeapList<T> where T : Node
                 // 节点下移
                 itemArray[current] = itemArray[left];
                 current = left;
-                left = left*2 + 1;
+                left = (left<<1) + 1;
             }
         }
         itemArray[current] = item;

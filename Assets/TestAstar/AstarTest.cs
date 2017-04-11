@@ -131,40 +131,6 @@ public class AstarTest : MonoBehaviour {
     /// </summary>
     private void Control()
     {
-        if (Input.GetMouseButtonDown(1))
-        {
-            BinaryHeapList<Node> nodeList = new BinaryHeapList<Node>((item1, item2) =>
-            {
-                if (item1 == null)
-                {
-                    //item1 = item2;
-                    return 1;
-                }
-                if (item2 == null)
-                {
-                    //item2 = item1;
-                    return -1;
-                }
-                if (item1.F > item2.F)
-                {
-                    return -1;
-                }
-                return item1.F < item2.F ? 1 : 0;
-            });
-            var random = new Random(DateTime.Now.Millisecond);
-            for (var i = 0; i < 10; i++)
-            {
-                var node = new Node(0, 0);
-                node.F = random.Next(100);
-                nodeList.Push(node);
-            }
-
-            for (var i = 0; i < 10; i++)
-            {
-                var node = nodeList.Pop();
-                Debug.Log(node.F);
-            }
-        }
         if (Input.GetMouseButtonDown(0))
         {
             // 获取地图上的点击点
