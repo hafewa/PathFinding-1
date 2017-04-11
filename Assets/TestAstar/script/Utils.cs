@@ -337,6 +337,30 @@ public class Utils
         return (float)Math.Sqrt(xOffset*xOffset + yOffset*yOffset);
     }
 
+    /// <summary>
+    /// 拷贝int数组
+    /// </summary>
+    /// <param name="from">数据源</param>
+    /// <param name="to">目标数组</param>
+    /// <param name="rowCount">行数</param>
+    /// <param name="colCount">列数</param>
+    public static void CopyArray(int[][] from,out int[][] to, int rowCount, int colCount)
+    {
+        if (from == null || rowCount <= 0 || colCount <= 0)
+        {
+            throw new Exception("拷贝数据错误.");
+        }
+        to = new int[rowCount][];
+        for (var i = 0; i < rowCount; i++)
+        {
+            to[i] = new int[colCount];
+            for (var j = 0; j < colCount; j++)
+            {
+                to[i][j] = from[i][j];
+            }
+        }
+    }
+
 
     // ---------------------静态方法-------------------------
 
