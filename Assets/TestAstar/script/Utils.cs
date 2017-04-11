@@ -338,7 +338,7 @@ public class Utils
     }
 
     /// <summary>
-    /// 拷贝int数组
+    /// 拷贝int二维数组
     /// </summary>
     /// <param name="from">数据源</param>
     /// <param name="to">目标数组</param>
@@ -358,6 +358,24 @@ public class Utils
             {
                 to[i][j] = from[i][j];
             }
+        }
+    }
+
+    /// <summary>
+    /// 拷贝int一维数组
+    /// </summary>
+    /// <param name="from">数据源</param>
+    /// <param name="to">目标数组</param>
+    /// <param name="length">拷贝长度</param>
+    public static void CopyArray<T>(T[] from, T[] to, int length)
+    {
+        if (from == null || to == null || length <= 0 || from.Length < length || to.Length < length)
+        {
+            return;
+        }
+        for (var i = 0; i < length; i++)
+        {
+            to[i] = from[i];
         }
     }
 

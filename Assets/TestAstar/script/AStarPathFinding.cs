@@ -41,7 +41,7 @@ public class AStarPathFinding
     public static IList<Node> SearchRoad(int[][] map, int startX, int startY, int endX, int endY, int diameterX, int diameterY,
         bool isJumpPoint = false, Action completeCallback = null)
     {
-        Debug.Log(string.Format("start:{0},{1} end:{2},{3}", startX, startY, endX, endY));
+
         // 结束节点
         Node endNode = null;
         var now = Time.realtimeSinceStartup;
@@ -66,7 +66,6 @@ public class AStarPathFinding
         {
             endY = diameterY + 1;
         }
-        Debug.Log(string.Format("start:{0},{1} end:{2},{3}", startX, startY, endX, endY));
 
         // 复制数据, 用于标记关闭列表
         int[][] closePathMap;
@@ -253,6 +252,7 @@ public class AStarPathFinding
                 var computeX = nowNode.X + i;
                 var computeY = nowNode.Y + j;
                 // 判断点的位置是否合法
+                // 判断斜向运动时
                 if (computeX < 0 ||
                     computeY < 0 ||
                     computeX >= computeMap[0].Length ||
@@ -279,13 +279,13 @@ public class AStarPathFinding
         var y = curPoint.Y;
         return new[]
         {
-            new Node(x - 1, y - 1),
+            //new Node(x - 1, y - 1),
             new Node(x, y - 1),
-            new Node(x + 1, y - 1),
+            //new Node(x + 1, y - 1),
             new Node(x + 1, y),
-            new Node(x + 1, y + 1),
+            //new Node(x + 1, y + 1),
             new Node(x, y + 1),
-            new Node(x - 1, y + 1),
+            //new Node(x - 1, y + 1),
             new Node(x - 1, y)
         };
     }
@@ -386,6 +386,11 @@ public class BinaryHeapList<T> where T : Node
     /// </summary>
     private int colCount = 0;
 
+    /// <summary>
+    /// 存储长度
+    /// </summary>
+    private int bufferLength = 1024;
+
 
     /// <summary>
     /// 初始化二叉堆列表
@@ -397,7 +402,7 @@ public class BinaryHeapList<T> where T : Node
     public BinaryHeapList(Func<T, T, int> compTo, int rowCount, int colCount)
     {
         this.compTo = compTo;
-        itemArray = new T[1024];
+        itemArray = new T[bufferLength];
         // 初始化open列表
         openPath = new Node[rowCount][];
         for (var i = 0; i < rowCount; i++)
@@ -423,12 +428,20 @@ public class BinaryHeapList<T> where T : Node
         itemArray[arrayPos] = item;
         // 然后向上调整数组
         FilterUp(arrayPos);
-        // TODO 判断是否空间足够, 不足则重新分配空间
         
         arrayPos++;
         Count++;
+        // 判断是否空间足够, 不足则重新分配空间
+        if (bufferLength - arrayPos <= 1)
+        {
+            // 缓存体积 * 2
+            bufferLength = bufferLength << 1;
+            var tmpArray = new T[bufferLength];
+            Utils.CopyArray(itemArray, tmpArray, arrayPos);
+            itemArray = tmpArray;
+            tmpArray = null;
+        }
         // 加入单元列表
-        //Debug.Log("x:" + item.X + ",y:" + item.Y + "mapLength:" + openPath.Length + "mapW:" + openPath[0].Length);
         openPath[item.Y][item.X] = item;
     }
 

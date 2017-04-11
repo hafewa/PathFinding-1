@@ -143,14 +143,8 @@ public class AstarTest : MonoBehaviour {
                 var posOnMap = Utils.PositionToNum(LoadMap.MapPlane.transform.position, hit.point, UnitWidth, MapWidth, MapHeight);
                 // 加载文件内容
                 var mapInfoData = InitMapInfo();
-                Debug.Log("from:" + lastTimeTargetX + "," + lastTimeTargetY + " to:" + posOnMap[0] + "," + posOnMap[1]);
-                //var path = AStarPathFinding.SearchRoad(mapInfoData, lastTimeTargetX, lastTimeTargetY, posOnMap[0], posOnMap[1], DiameterX, DiameterY, IsJumpPoint);
-                var path = AStarPathFinding.SearchRoad(mapInfoData, 116, 19, 1, 19, DiameterX, DiameterY, IsJumpPoint);
-                var path1 = AStarPathFinding.SearchRoad(mapInfoData, 116, 19, 1, 19, DiameterX, DiameterY, IsJumpPoint);
-                var path2 = AStarPathFinding.SearchRoad(mapInfoData, 116, 19, 1, 19, DiameterX, DiameterY, IsJumpPoint);
-                var path3 = AStarPathFinding.SearchRoad(mapInfoData, 116, 19, 1, 19, DiameterX, DiameterY, IsJumpPoint);
-                var path4 = AStarPathFinding.SearchRoad(mapInfoData, 116, 19, 1, 19, DiameterX, DiameterY, IsJumpPoint);
-                var path5 = AStarPathFinding.SearchRoad(mapInfoData, 116, 19, 1, 19, DiameterX, DiameterY, IsJumpPoint);
+
+                var path = AStarPathFinding.SearchRoad(mapInfoData, lastTimeTargetX, lastTimeTargetY, posOnMap[0], posOnMap[1], DiameterX, DiameterY, IsJumpPoint);
                 // 根据path放地标, 使用组队寻路跟随过去
                 StartCoroutine(Step(path));
                 
