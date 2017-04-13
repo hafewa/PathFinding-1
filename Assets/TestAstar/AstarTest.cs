@@ -126,11 +126,23 @@ public class AstarTest : MonoBehaviour {
         Control();
     }
 
+    private long key = -1;
     /// <summary>
     /// 控制
     /// </summary>
     private void Control()
     {
+        if (Input.GetMouseButtonDown(1))
+        {
+            LooperImpl.Single.Remove(10000);
+            //for(var i = 0; i < 1000; i++)
+            //    key = LooperImpl.Single.Add(new LoopItemImpl()
+            //    {
+            //        DoAction = () => { double x = Math.Sqrt(100); },
+            //        DoOnDestory = () => { Debug.Log("destory"); }
+            //    });
+
+        }
         if (Input.GetMouseButtonDown(0))
         {
             // 获取地图上的点击点

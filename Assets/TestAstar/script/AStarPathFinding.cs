@@ -44,7 +44,7 @@ public class AStarPathFinding
 
         // 结束节点
         Node endNode = null;
-        var now = Time.realtimeSinceStartup;
+        //var now = Time.realtimeSinceStartup;
         // 行列数量
         var rowCount = map.Length;
         var colCount = map[0].Length;
@@ -215,7 +215,7 @@ public class AStarPathFinding
             completeCallback();
         }
 
-        Debug.Log(string.Format("{0:#.##########}", Time.realtimeSinceStartup - now));
+        //Debug.Log(string.Format("{0:#.##########}", Time.realtimeSinceStartup - now));
         // 返回路径, 如果路径数量为0 则没有可行路径
         return path;
     }
@@ -475,7 +475,7 @@ public class BinaryHeapList<T> where T : Node
     {
         var current = start;
         // 获取父节点位置
-        var parent = (current - 1)>>1;
+        var parent = (current - 1) >> 1;
         // 当前节点值
         var item = itemArray[current];
         while (current > 0)
@@ -491,7 +491,7 @@ public class BinaryHeapList<T> where T : Node
                 // 节点上移
                 itemArray[current] = itemArray[parent];
                 current = parent;
-                parent = (parent - 1)>>1;
+                parent = (parent - 1) >> 1;
             }
         }
 
@@ -508,7 +508,7 @@ public class BinaryHeapList<T> where T : Node
         // 当前节点
         var current = start;
         // 左子节点
-        var left = (current<<1) + 1;
+        var left = (current << 1) + 1;
         // 当前节点值
         var item = itemArray[current];
 
@@ -529,7 +529,7 @@ public class BinaryHeapList<T> where T : Node
                 // 节点下移
                 itemArray[current] = itemArray[left];
                 current = left;
-                left = (left<<1) + 1;
+                left = (left << 1) + 1;
             }
         }
         itemArray[current] = item;
