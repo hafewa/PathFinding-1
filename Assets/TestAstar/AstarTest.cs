@@ -132,12 +132,8 @@ public class AstarTest : MonoBehaviour {
     /// </summary>
     private void Control()
     {
-        if (Input.GetMouseButtonDown(1))
-        {
-            // 创建点特效
-            //EffectsFactory.Single.CreatePointEffect("test/PointEffect", null,
-            //    new Vector3(10, 10, 10), new Vector3(10, 10, 10), 1).Begin();
-            EffectsFactory.Single.CreatePointToPointEffect("test/PointEffect", null, new Vector3(0, 0, 0), new Vector3(100, 0, 100), new Vector3(1, 1, 1), 10).Begin();
+        //if (Input.GetMouseButtonDown(1))
+        //{
             // LooperImpl.Single.Remove(10000);
             //for(var i = 0; i < 1000; i++)
             //    key = LooperImpl.Single.Add(new LoopItemImpl()
@@ -146,7 +142,7 @@ public class AstarTest : MonoBehaviour {
             //        DoOnDestory = () => { Debug.Log("destory"); }
             //    });
 
-        }
+        //}
         if (Input.GetMouseButtonDown(0))
         {
             // 获取地图上的点击点
