@@ -365,37 +365,37 @@ public class ScopeEffect : EffectBehaviorAbstract
 }
 
 
-/// <summary>
-/// 特效运动Looper
-/// </summary>
-public class EffectLooper : ILoopItem
-{
+///// <summary>
+///// 特效运动Looper
+///// </summary>
+//public class EffectLooper : ILoopItem
+//{
 
-    /// <summary>
-    /// 单次循环
-    /// </summary>
-    public void Do()
-    {
+//    /// <summary>
+//    /// 单次循环
+//    /// </summary>
+//    public void Do()
+//    {
 
-    }
+//    }
 
-    /// <summary>
-    /// 是否执行完毕
-    /// </summary>
-    /// <returns></returns>
-    public bool IsEnd()
-    {
-        return false;
-    }
+//    /// <summary>
+//    /// 是否执行完毕
+//    /// </summary>
+//    /// <returns></returns>
+//    public bool IsEnd()
+//    {
+//        return false;
+//    }
 
-    /// <summary>
-    /// 被销毁时执行
-    /// </summary>
-    public void OnDestroy()
-    {
+//    /// <summary>
+//    /// 被销毁时执行
+//    /// </summary>
+//    public void OnDestroy()
+//    {
 
-    }
-}
+//    }
+//}
 
 /// <summary>
 /// 特效加载器

@@ -13,7 +13,7 @@ public class Looper : MonoBehaviour
     void Update()
     {
         // 执行循环
-        LooperImpl.Single.DoLoop();
+        LooperManager.Single.DoLoop();
     }
 }
 
@@ -22,18 +22,18 @@ public class Looper : MonoBehaviour
 /// 循环器
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class LooperImpl : LooperAbstract<ILoopItem>
+public class LooperManager : LooperAbstract<ILoopItem>
 {
     /// <summary>
     /// 单例
     /// </summary>
-    public static LooperImpl Single
+    public static LooperManager Single
     {
         get
         {
             if (single == null)
             {
-                single = new LooperImpl();
+                single = new LooperManager();
             }
             return single;
         }
@@ -42,7 +42,7 @@ public class LooperImpl : LooperAbstract<ILoopItem>
     /// <summary>
     /// 单例对象
     /// </summary>
-    private static LooperImpl single = null;
+    private static LooperManager single = null;
 }
 
 /// <summary>
