@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Assets.Logic.Script.YQ2Common.Util
+namespace Util
 {
     /// <summary>
     /// 定时器

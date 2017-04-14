@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Assets.Logic.Script.YQ2Common.Util;
 using Random = System.Random;
 
 public class AstarTest : MonoBehaviour {
@@ -134,8 +133,6 @@ public class AstarTest : MonoBehaviour {
     {
         if (Input.GetMouseButtonDown(1))
         {
-            var timer = new Timer(1);
-            timer.Start().OnCompleteCallback(() => { Debug.Log("TimesUp"); });
             // LooperImpl.Single.Remove(10000);
             //for(var i = 0; i < 1000; i++)
             //    key = LooperImpl.Single.Add(new LoopItemImpl()
