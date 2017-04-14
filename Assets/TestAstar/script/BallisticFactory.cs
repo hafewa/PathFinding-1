@@ -86,7 +86,7 @@ public class BallisticFactory
     /// <param name="turnaroundWeight">转向权重</param>
     /// <returns>目标点飞行弹道</returns>
     public Ballistic CreateBallistic(GameObject ball, 
-        Vector3 startPos, 
+        Vector3 startPos,
         Vector3 direction,
         Vector3 targetPos, 
         float speed, 

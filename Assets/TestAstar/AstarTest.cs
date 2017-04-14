@@ -134,7 +134,11 @@ public class AstarTest : MonoBehaviour {
     {
         if (Input.GetMouseButtonDown(1))
         {
-            LooperImpl.Single.Remove(10000);
+            // 创建点特效
+            //EffectsFactory.Single.CreatePointEffect("test/PointEffect", null,
+            //    new Vector3(10, 10, 10), new Vector3(10, 10, 10), 1).Begin();
+            EffectsFactory.Single.CreatePointToPointEffect("test/PointEffect", null, new Vector3(0, 0, 0), new Vector3(100, 0, 100), new Vector3(1, 1, 1), 10).Begin();
+            // LooperImpl.Single.Remove(10000);
             //for(var i = 0; i < 1000; i++)
             //    key = LooperImpl.Single.Add(new LoopItemImpl()
             //    {

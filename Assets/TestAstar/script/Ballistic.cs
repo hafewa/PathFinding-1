@@ -7,7 +7,7 @@ using UnityEngine;
 /// <summary>
 /// 弹道脚本
 /// </summary>z`
-public class Ballistic : MonoBehaviour
+public class Ballistic : MonoBehaviour , IBallistic
 {
     // -------------------------公共属性--------------------------
     /// <summary>
@@ -84,12 +84,17 @@ public class Ballistic : MonoBehaviour
     /// </summary>
     private bool notComplete = true;
 
+    /// <summary>
+    /// 是否暂停
+    /// </summary>
+    private bool isPause = false;
+
 
 
 
     void Update()
     {
-        if (BallisticArriveTarget != null && notComplete)
+        if (!isPause && BallisticArriveTarget != null && notComplete)
         {
             // 移动
             if (Move != null)
@@ -105,4 +110,34 @@ public class Ballistic : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 暂停
+    /// </summary>
+    public void Pause()
+    {
+        isPause = true;
+    }
+
+    /// <summary>
+    /// 继续
+    /// </summary>
+    public void AntiPause()
+    {
+        isPause = false;
+    }
+}
+
+
+
+public interface IBallistic
+{
+    /// <summary>
+    /// 暂停
+    /// </summary>
+    void Pause();
+
+    /// <summary>
+    /// 继续
+    /// </summary>
+    void AntiPause();
 }
