@@ -119,7 +119,7 @@ public class BallisticFactory
 
     /// <summary>
     /// 创建弹道3
-    /// 目标对象, 到达目标点为
+    /// 目标对象, 到达目标点
     /// </summary>
     /// <param name="ball">弹道对象</param>
     /// <param name="startPos">起始位置</param>
@@ -238,7 +238,8 @@ public class BallisticArriveTargetForPosition : BallisticArriveTarget
         if (ball != null)
         {
             // 判断位置+半径是否到达目标
-            if ((ball.Position - TargetPosition).magnitude <= ball.Radius)
+            var nowDir = (TargetPosition - ball.Position);
+            if (nowDir.magnitude <= ball.Radius || Vector3.Angle(nowDir, ball.Direction) > 10)
             {
                 result = true;
             }

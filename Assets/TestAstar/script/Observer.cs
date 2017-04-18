@@ -15,7 +15,10 @@ public class ObserverManager
     private IList<ISubject> subjectList = new List<ISubject>();
 
 
-
+    /// <summary>
+    /// 添加通知者
+    /// </summary>
+    /// <param name="subject"></param>
     public void AddSubject(ISubject subject)
     {
         subjectList.Add(subject);

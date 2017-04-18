@@ -36,9 +36,10 @@ namespace Util
         /// 时间到调用
         /// </summary>
         /// <param name="completeCallback">调用Callback Action</param>
-        public void OnCompleteCallback(Action completeCallback)
+        public Timer OnCompleteCallback(Action completeCallback)
         {
             TimesUpDo += completeCallback;
+            return this;
         }
 
         /// <summary>
