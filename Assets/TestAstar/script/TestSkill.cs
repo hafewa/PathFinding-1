@@ -23,6 +23,16 @@ public class TestSkill : MonoBehaviour {
     /// </summary>
     public int SkillNum = 0;
 
+    /// <summary>
+    /// 主相机
+    /// </summary>
+    public Camera MainCamera;
+
+    /// <summary>
+    /// 平台
+    /// </summary>
+    public GameObject Plane;
+
 	void Start () {
 	
 	}
@@ -40,6 +50,19 @@ public class TestSkill : MonoBehaviour {
     /// </summary>
     private void Control()
     {
+        // 点击产生目标点
+        if (Input.GetMouseButtonUp(0))
+        {
+            Ray ray = MainCamera.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit))
+            {
+                if (hit.collider.name.Equals(Plane.name))
+                {
+                    TargetPos = hit.point;
+                }
+            }
+        }
 
         // ------------------------主动技能--------------------------
         // 点击鼠标左键发射技能
@@ -76,21 +99,75 @@ public class TestSkill : MonoBehaviour {
             SkillNum = 6;
             Debug.Log("切换 牺牲(嘲讽)");
         }
-        else if (Input.GetKey(KeyCode.Alpha6))
+        else if (Input.GetKeyUp(KeyCode.U))
         {
-
+            SkillNum = 7;
+            Debug.Log("切换 复活");
         }
-        else if (Input.GetKey(KeyCode.Alpha7))
+        else if (Input.GetKeyUp(KeyCode.I))
         {
-
+            SkillNum = 8;
+            Debug.Log("切换 战地急救");
         }
-        else if (Input.GetKey(KeyCode.Alpha8))
+        else if (Input.GetKeyUp(KeyCode.O))
         {
-
+            SkillNum = 9;
+            Debug.Log("切换 魅惑");
         }
-        else if (Input.GetKey(KeyCode.Alpha9))
+        else if (Input.GetKeyUp(KeyCode.P))
         {
-
+            SkillNum = 10;
+            Debug.Log("切换 粘附燃料");
+        }
+        else if (Input.GetKeyUp(KeyCode.A))
+        {
+            SkillNum = 11;
+            Debug.Log("切换 跟踪飞弹");
+        }
+        else if (Input.GetKeyUp(KeyCode.S))
+        {
+            SkillNum = 12;
+            Debug.Log("切换 粘附燃料");
+        }
+        else if (Input.GetKeyUp(KeyCode.D))
+        {
+            SkillNum = 13;
+            Debug.Log("切换 粘附燃料");
+        }
+        else if (Input.GetKeyUp(KeyCode.F))
+        {
+            SkillNum = 14;
+            Debug.Log("切换 粘附燃料");
+        }
+        else if (Input.GetKeyUp(KeyCode.G))
+        {
+            SkillNum = 15;
+            Debug.Log("切换 粘附燃料");
+        }
+        else if (Input.GetKeyUp(KeyCode.H))
+        {
+            SkillNum = 16;
+            Debug.Log("切换 粘附燃料");
+        }
+        else if (Input.GetKeyUp(KeyCode.J))
+        {
+            SkillNum = 17;
+            Debug.Log("切换 粘附燃料");
+        }
+        else if (Input.GetKeyUp(KeyCode.K))
+        {
+            SkillNum = 18;
+            Debug.Log("切换 粘附燃料");
+        }
+        else if (Input.GetKeyUp(KeyCode.L))
+        {
+            SkillNum = 19;
+            Debug.Log("切换 粘附燃料");
+        }
+        else if (Input.GetKeyUp(KeyCode.Z))
+        {
+            SkillNum = 20;
+            Debug.Log("切换 粘附燃料");
         }
 
 
@@ -109,7 +186,7 @@ public class TestSkill : MonoBehaviour {
                     {
                         // 效果1
                         EffectsFactory.Single.CreatePointToPointEffect("test/TrailPrj", null, StartPos,
-                            TargetPos, new Vector3(1, 1, 1), 100, callback).Begin();
+                            TargetPos, new Vector3(1, 1, 1), 100, TrajectoryAlgorithmType.Line, callback).Begin();
                         Debug.Log("特效2");
 
                     }, Formula.FormulaWaitType).After(new Formula((callback) =>
@@ -136,7 +213,7 @@ public class TestSkill : MonoBehaviour {
                     {
                         // 攻击物向目标飞行
                         EffectsFactory.Single.CreatePointToPointEffect("test/TrailPrj", null, StartPos,
-                            TargetPos, new Vector3(1, 1, 1), 100, callback).Begin();
+                            TargetPos, new Vector3(1, 1, 1), 100, TrajectoryAlgorithmType.Line, callback).Begin();
                     };
                     // 步骤2
                     Action<Action> step2 = (callback) =>
@@ -175,7 +252,7 @@ public class TestSkill : MonoBehaviour {
                     {
                         // 发射跟踪
                         EffectsFactory.Single.CreatePointToPointEffect("test/TrailPrj", null, StartPos,
-                            TargetPos, new Vector3(1, 1, 1), 100, callback).Begin();
+                            TargetPos, new Vector3(1, 1, 1), 100, TrajectoryAlgorithmType.Line, callback).Begin();
                     };
                     // 步骤3
                     Action<Action> step3 = (callback) =>
@@ -218,7 +295,7 @@ public class TestSkill : MonoBehaviour {
                         {
                             // 发射跟踪
                             EffectsFactory.Single.CreatePointToPointEffect("test/TrailPrj", null, StartPos,
-                                TargetPos, new Vector3(1, 1, 1), 100, callback).Begin();
+                                TargetPos, new Vector3(1, 1, 1), 100, TrajectoryAlgorithmType.Line, callback).Begin();
                         };
                         // 步骤3
                         Action<Action> step3 = (callback) =>
@@ -261,7 +338,7 @@ public class TestSkill : MonoBehaviour {
                         {
                             // 发射跟踪
                             EffectsFactory.Single.CreatePointToPointEffect("test/TrailPrj", null, StartPos,
-                                TargetPos, new Vector3(1, 1, 1), 100, callback).Begin();
+                                TargetPos, new Vector3(1, 1, 1), 100, TrajectoryAlgorithmType.Line, callback).Begin();
                         };
                         // 步骤3
                         Action<Action> step3 = (callback) =>
@@ -289,7 +366,7 @@ public class TestSkill : MonoBehaviour {
                 case 5:
                     { 
                         Debug.Log("士气");
-                        // 步骤2
+                        // 步骤1
                         Action<Action> step1 = (callback) =>
                         {
                             // 发射跟踪
@@ -307,7 +384,7 @@ public class TestSkill : MonoBehaviour {
                 case 6:
                 {
                         Debug.Log("牺牲(嘲讽)");
-                        // 步骤2
+                        // 步骤1
                         Action<Action> step1 = (callback) =>
                         {
                             // 发射跟踪
@@ -324,19 +401,312 @@ public class TestSkill : MonoBehaviour {
                     break;
                 case 7:
                 {
-                }
+                        Debug.Log("复活");
+                        // 步骤1
+                        Action<Action> step1 = (callback) =>
+                        {
+                            // 发射跟踪
+                            Debug.Log("碰撞检测坟场中附近单位, 复活效果 与特效");
+                            EffectsFactory.Single.CreatePointEffect("test/ExplordScope", null,
+                            TargetPos, new Vector3(30, 0.1f, 30), 1, 1, callback).Begin();
+                        };
+
+                        var formula = new Formula(step1, Formula.FormulaWaitType);
+
+                        // 执行技能效果
+                        SkillManager.Single.DoFormula(formula);
+                    }
                     break;
                 case 8:
                 {
-                }
+                        Debug.Log("战地急救");
+                        // 步骤1
+                        Action<Action> step1 = (callback) =>
+                        {
+                            // 发射跟踪
+                            Debug.Log("碰撞检测附近友军单位, 上加血Buff 与特效");
+                            EffectsFactory.Single.CreatePointEffect("test/ExplordScope", null,
+                            TargetPos, new Vector3(20, 0.1f, 30), 1, 1, callback).Begin();
+                        };
+
+                        var formula = new Formula(step1, Formula.FormulaWaitType);
+
+                        // 执行技能效果
+                        SkillManager.Single.DoFormula(formula);
+                    }
                     break;
                 case 9:
                 {
-                }
+                        Debug.Log("魅惑");
+                        GameObject targetObj = null;
+                        // 步骤1
+                        Action<Action> step1 = (callback) =>
+                        {
+                            Debug.Log("创建目标");
+                            // 创建目标
+                            targetObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                            targetObj.transform.position = TargetPos;
+                            callback();
+                        };
+                        // 步骤2
+                        Action<Action> step2= (callback) =>
+                        {
+                            // 结算与特效
+                            Debug.Log("增加魅惑Debuff与特效");
+                            EffectsFactory.Single.CreatePointEffect("test/PointEffect", null,
+                            TargetPos, new Vector3(3, 3, 3), 1, 1, callback).Begin();
+                        };
+                        // 步骤3
+                        Action<Action> step3 = (callback) =>
+                        {
+                            Debug.Log("销毁目标");
+                            Destroy(targetObj);
+                        };
+
+                    var formula = new Formula(step1, Formula.FormulaWaitType)
+                        .After(new Formula(step2, Formula.FormulaWaitType))
+                        .After(new Formula(step3, Formula.FormulaWaitType));
+
+                        // 执行技能效果
+                        SkillManager.Single.DoFormula(formula);
+                    }
                     break;
                 case 10:
                 {
+                    Debug.Log("粘附燃料");
+                    Action<Action> step1 = (callback) =>
+                    {
+                        // 结算与特效
+                        Debug.Log("创建伤害检测碰撞区域, 并创建特效");
+                        EffectsFactory.Single.CreatePointEffect("test/PointEffect", null,
+                            TargetPos, new Vector3(3, 3, 3), 10, 1, callback).Begin();
+                    };
+                    var formula = new Formula(step1, Formula.FormulaWaitType);
+
+                    // 执行技能效果
+                    SkillManager.Single.DoFormula(formula);
                 }
+                    break;
+                case 11:
+                {
+                    Debug.Log("跟踪飞弹");
+                    var random = new System.Random(DateTime.Now.Millisecond);
+                    {
+                        GameObject targetObj1 = null;
+                        Action<Action> step1 = (callback) =>
+                        {
+                            // 范围内创建两个随机位置对象
+                            targetObj1 = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                            targetObj1.transform.position =
+                                new Vector3(random.Next((int) (TargetPos.x - 10), (int) (TargetPos.x + 10)), 0,
+                                    random.Next((int) (TargetPos.z - 10), (int) (TargetPos.z + 10)));
+
+                            callback();
+                        };
+
+
+                        // 步骤2
+                        Action<Action> step2 = (callback) =>
+                        {
+                            // 发射跟踪
+                            EffectsFactory.Single.CreatePointToObjEffect("test/TrailPrj", null, StartPos,
+                                targetObj1, new Vector3(1, 1, 1), 100, TrajectoryAlgorithmType.Line, callback).Begin();
+                        };
+
+                        // 步骤3
+                        Action<Action> step3 = (callback) =>
+                        {
+                            Debug.Log("销毁目标");
+                            Destroy(targetObj1);
+                        };
+                        var formula = new Formula(step1, Formula.FormulaWaitType)
+                            .After(new Formula(step2, Formula.FormulaWaitType))
+                            .After(new Formula(step3));
+
+                        // 执行技能效果
+                        SkillManager.Single.DoFormula(formula);
+
+                    }
+                    {
+                        GameObject targetObj1 = null;
+                        Action<Action> step1 = (callback) =>
+                        {
+                            // 范围内创建两个随机位置对象
+                            targetObj1 = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                            targetObj1.transform.position =
+                                new Vector3(random.Next((int) (TargetPos.x - 10), (int) (TargetPos.x + 10)), 0,
+                                    random.Next((int) (TargetPos.z - 10), (int) (TargetPos.z + 10)));
+
+                            callback();
+                        };
+
+                        // 步骤2
+                        Action<Action> step2 = (callback) =>
+                        {
+                            // 发射跟踪
+                            EffectsFactory.Single.CreatePointToObjEffect("test/TrailPrj", null, StartPos,
+                                targetObj1, new Vector3(1, 1, 1), 100, TrajectoryAlgorithmType.Line, callback).Begin();
+                        };
+
+                        // 步骤3
+                        Action<Action> step3 = (callback) =>
+                        {
+                            Debug.Log("销毁目标");
+                            Destroy(targetObj1);
+                        };
+                        var formula = new Formula(step1, Formula.FormulaWaitType)
+                            .After(new Formula(step2, Formula.FormulaWaitType))
+                            .After(new Formula(step3));
+
+                        // 执行技能效果
+                        SkillManager.Single.DoFormula(formula);
+                    }
+
+                }
+                    break;
+                case 12:
+                    {
+                        Debug.Log("粘附燃料");
+                        Action<Action> step1 = (callback) =>
+                        {
+                            // 结算与特效
+                            Debug.Log("创建伤害检测碰撞区域, 并创建特效");
+                            EffectsFactory.Single.CreatePointEffect("test/PointEffect", null,
+                                TargetPos, new Vector3(3, 3, 3), 10, 1, callback).Begin();
+                        };
+                        var formula = new Formula(step1, Formula.FormulaWaitType);
+
+                        // 执行技能效果
+                        SkillManager.Single.DoFormula(formula);
+                    }
+                    break;
+                case 13:
+                    {
+                        Debug.Log("粘附燃料");
+                        Action<Action> step1 = (callback) =>
+                        {
+                            // 结算与特效
+                            Debug.Log("创建伤害检测碰撞区域, 并创建特效");
+                            EffectsFactory.Single.CreatePointEffect("test/PointEffect", null,
+                                TargetPos, new Vector3(3, 3, 3), 10, 1, callback).Begin();
+                        };
+                        var formula = new Formula(step1, Formula.FormulaWaitType);
+
+                        // 执行技能效果
+                        SkillManager.Single.DoFormula(formula);
+                    }
+                    break;
+                case 14:
+                    {
+                        Debug.Log("粘附燃料");
+                        Action<Action> step1 = (callback) =>
+                        {
+                            // 结算与特效
+                            Debug.Log("创建伤害检测碰撞区域, 并创建特效");
+                            EffectsFactory.Single.CreatePointEffect("test/PointEffect", null,
+                                TargetPos, new Vector3(3, 3, 3), 10, 1, callback).Begin();
+                        };
+                        var formula = new Formula(step1, Formula.FormulaWaitType);
+
+                        // 执行技能效果
+                        SkillManager.Single.DoFormula(formula);
+                    }
+                    break;
+                case 15:
+                    {
+                        Debug.Log("粘附燃料");
+                        Action<Action> step1 = (callback) =>
+                        {
+                            // 结算与特效
+                            Debug.Log("创建伤害检测碰撞区域, 并创建特效");
+                            EffectsFactory.Single.CreatePointEffect("test/PointEffect", null,
+                                TargetPos, new Vector3(3, 3, 3), 10, 1, callback).Begin();
+                        };
+                        var formula = new Formula(step1, Formula.FormulaWaitType);
+
+                        // 执行技能效果
+                        SkillManager.Single.DoFormula(formula);
+                    }
+                    break;
+                case 16:
+                    {
+                        Debug.Log("粘附燃料");
+                        Action<Action> step1 = (callback) =>
+                        {
+                            // 结算与特效
+                            Debug.Log("创建伤害检测碰撞区域, 并创建特效");
+                            EffectsFactory.Single.CreatePointEffect("test/PointEffect", null,
+                                TargetPos, new Vector3(3, 3, 3), 10, 1, callback).Begin();
+                        };
+                        var formula = new Formula(step1, Formula.FormulaWaitType);
+
+                        // 执行技能效果
+                        SkillManager.Single.DoFormula(formula);
+                    }
+                    break;
+                case 17:
+                    {
+                        Debug.Log("粘附燃料");
+                        Action<Action> step1 = (callback) =>
+                        {
+                            // 结算与特效
+                            Debug.Log("创建伤害检测碰撞区域, 并创建特效");
+                            EffectsFactory.Single.CreatePointEffect("test/PointEffect", null,
+                                TargetPos, new Vector3(3, 3, 3), 10, 1, callback).Begin();
+                        };
+                        var formula = new Formula(step1, Formula.FormulaWaitType);
+
+                        // 执行技能效果
+                        SkillManager.Single.DoFormula(formula);
+                    }
+                    break;
+                case 18:
+                    {
+                        Debug.Log("粘附燃料");
+                        Action<Action> step1 = (callback) =>
+                        {
+                            // 结算与特效
+                            Debug.Log("创建伤害检测碰撞区域, 并创建特效");
+                            EffectsFactory.Single.CreatePointEffect("test/PointEffect", null,
+                                TargetPos, new Vector3(3, 3, 3), 10, 1, callback).Begin();
+                        };
+                        var formula = new Formula(step1, Formula.FormulaWaitType);
+
+                        // 执行技能效果
+                        SkillManager.Single.DoFormula(formula);
+                    }
+                    break;
+                case 19:
+                    {
+                        Debug.Log("粘附燃料");
+                        Action<Action> step1 = (callback) =>
+                        {
+                            // 结算与特效
+                            Debug.Log("创建伤害检测碰撞区域, 并创建特效");
+                            EffectsFactory.Single.CreatePointEffect("test/PointEffect", null,
+                                TargetPos, new Vector3(3, 3, 3), 10, 1, callback).Begin();
+                        };
+                        var formula = new Formula(step1, Formula.FormulaWaitType);
+
+                        // 执行技能效果
+                        SkillManager.Single.DoFormula(formula);
+                    }
+                    break;
+                case 20:
+                    {
+                        Debug.Log("粘附燃料");
+                        Action<Action> step1 = (callback) =>
+                        {
+                            // 结算与特效
+                            Debug.Log("创建伤害检测碰撞区域, 并创建特效");
+                            EffectsFactory.Single.CreatePointEffect("test/PointEffect", null,
+                                TargetPos, new Vector3(3, 3, 3), 10, 1, callback).Begin();
+                        };
+                        var formula = new Formula(step1, Formula.FormulaWaitType);
+
+                        // 执行技能效果
+                        SkillManager.Single.DoFormula(formula);
+                    }
                     break;
             }
         }

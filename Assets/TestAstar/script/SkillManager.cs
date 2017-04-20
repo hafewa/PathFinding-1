@@ -8,7 +8,7 @@ using UnityEngine;
 /// <summary>
 /// 技能管理器
 /// </summary>
-public class SkillManager : MonoBehaviour
+public class SkillManager
 {
     /// <summary>
     /// 单例
@@ -29,12 +29,7 @@ public class SkillManager : MonoBehaviour
     /// 单例对象
     /// </summary>
     private static SkillManager single = null;
-    // 创建效果使用类似lambda的方式连续公式的方式
-
-    void Start()
-    {
-        single = this;
-    }
+    
 
     /// <summary>
     /// 执行方程式
@@ -46,7 +41,8 @@ public class SkillManager : MonoBehaviour
         {
             throw new Exception("方程式对象为空.");
         }
-        StartCoroutine(LoopDoFormula(formula));
+        CoroutineManage.AutoInstance();
+        CoroutineManage.Single.StartCoroutine(LoopDoFormula(formula));
     }
 
     /// <summary>
@@ -84,6 +80,7 @@ public class SkillManager : MonoBehaviour
 }
 
 
+
 /// <summary>
 /// 行为链单位
 /// </summary>
@@ -101,12 +98,12 @@ public class Formula : IFormula
     public IFormula PreviewFormula { get; set; }
 
     /// <summary>
-    /// 不等待直接下一节点执行
+    /// 常量 不等待直接下一节点执行
     /// </summary>
     public const int FormulaNotWaitType = 0;
 
     /// <summary>
-    /// 等待完成后继续执行
+    /// 常亮 等待完成后继续执行
     /// </summary>
     public const int FormulaWaitType = 1;
 
@@ -114,7 +111,7 @@ public class Formula : IFormula
 
 
     /// <summary>
-    /// 方程式类型
+    /// 行为链类型
     /// 0: 无需等待直接继续下一节点
     /// 1: 等待当前节点执行完成再执行下一节点
     /// </summary>
@@ -123,38 +120,32 @@ public class Formula : IFormula
         set { formulaType = value; } }
 
     /// <summary>
-    /// 执行操作 
+    /// 当前节点执行的操作 
     /// 外部只读
     /// </summary>
-    public Action<Action> Do { get; private set; }
+    public Action<Action> Do { get; protected set; }
 
-
-
-    ///// <summary>
-    ///// 前一个行为
-    ///// </summary>
-    //private IFormula beforeBehavior = null;
-
-    ///// <summary>
-    ///// 后一个行为
-    ///// </summary>
-    //private IFormula afterBehavior = null;
 
     /// <summary>
-    /// 方程式执行方式
+    /// 行为链执行方式
+    /// 0: 无需等待直接继续下一节点
+    /// 1: 等待当前节点执行完成再执行下一节点
     /// </summary>
-    private int formulaType = FormulaNotWaitType;
+    protected int formulaType = FormulaNotWaitType;
 
 
     // -----------------------公用方法-----------------------
     
-
+    protected Formula()
+    {
+        
+    }
     /// <summary>
     /// 构建方法
     /// 传入执行操作
     /// </summary>
-    /// <param name="doForWaitAction">执行操作(等待完成)</param>
-    /// <param name="type">执行类型</param>
+    /// <param name="doForWaitAction">当前节点的行为</param>
+    /// <param name="type">执行类型, 0:不等待是否执行完毕继续下一届点, 1:等待节点执行完毕调用回调.</param>
     public Formula(Action<Action> doForWaitAction, int type = FormulaNotWaitType)
     {
         Do = doForWaitAction;
@@ -162,9 +153,9 @@ public class Formula : IFormula
     }
 
     /// <summary>
-    /// 获取链表头
+    /// 获取行为链链头
     /// </summary>
-    /// <returns>链表表头单位</returns>
+    /// <returns>链头单位</returns>
     public IFormula GetFirst()
     {
         IFormula tmpItem = PreviewFormula;
@@ -178,7 +169,7 @@ public class Formula : IFormula
     }
 
     /// <summary>
-    /// 行为链中是否有下一单位
+    /// 当前节点是否有下一单位
     /// </summary>
     /// <returns></returns>
     public bool HasNext()
@@ -192,10 +183,10 @@ public class Formula : IFormula
     
 
     /// <summary>
-    /// 添加下一个执行
+    /// 添加下一个节点
     /// </summary>
-    /// <param name="nextBehavior">下一个执行对象</param>
-    /// <returns>当前对象</returns>
+    /// <param name="nextBehavior">下一个节点</param>
+    /// <returns>下一节点</returns>
     public IFormula After(IFormula nextBehavior)
     {
         if (nextBehavior != null)
@@ -214,10 +205,10 @@ public class Formula : IFormula
     }
 
     /// <summary>
-    /// 添加前一个执行
+    /// 添加前一个节点
     /// </summary>
-    /// <param name="preBehavior">前一个执行对象</param>
-    /// <returns>当前对象</returns>
+    /// <param name="preBehavior">前一个节点</param>
+    /// <returns>前一节点</returns>
     public IFormula Before(IFormula preBehavior)
     {
         if (preBehavior != null)
@@ -234,23 +225,6 @@ public class Formula : IFormula
         }
         return this;
     }
-
-    ///// <summary>
-    ///// 执行该公式链(从头开始执行)
-    ///// 顺序执行无
-    ///// </summary>
-    //public void DoFormula()
-    //{
-    //    // 获取链表中的第一个
-    //    var topNode = GetFirst();
-
-    //    // 顺序执行每一个操作
-    //    while (topNode.HasNext())
-    //    {
-    //        topNode.Do();
-    //        topNode = topNode.GetNext();
-    //    }
-    //}
 }
 
 
@@ -273,7 +247,7 @@ public interface IFormula
     /// </summary>
     IFormula PreviewFormula { get; set; }
     /// <summary>
-    /// 方程式类型
+    /// 行为链类型
     /// 0: 无需等待直接继续下一节点
     /// 1: 等待当前节点执行完成再执行下一节点
     /// </summary>
@@ -285,46 +259,28 @@ public interface IFormula
     Action<Action> Do { get; }
 
     /// <summary>
-    /// 添加下一个执行
+    /// 添加下一节点
     /// </summary>
-    /// <param name="nextBehavior">下一个执行对象</param>
-    /// <returns>当前对象</returns>
+    /// <param name="nextBehavior">下一个节点</param>
+    /// <returns>下一个节点</returns>
     IFormula After(IFormula nextBehavior);
 
     /// <summary>
-    /// 添加前一个执行
+    /// 添加前一节点
     /// </summary>
-    /// <param name="preBehavior">前一个执行对象</param>
-    /// <returns>当前对象</returns>
+    /// <param name="preBehavior">前一个节点</param>
+    /// <returns>前一个节点</returns>
     IFormula Before(IFormula preBehavior);
 
     /// <summary>
-    /// 行为链中是否有下一单位
+    /// 当前节点是否有下一节点
     /// </summary>
     /// <returns></returns>
     bool HasNext();
 
-    ///// <summary>
-    ///// 获取下一个单位
-    ///// </summary>
-    ///// <returns>下一个单位</returns>
-    //IFormula GetNext();
-
-    ///// <summary>
-    ///// 获取上一个单位
-    ///// </summary>
-    ///// <returns></returns>
-    //IFormula GetPreview();
-
     /// <summary>
-    /// 获取链表头
+    /// 获取链头
     /// </summary>
-    /// <returns>链表头单位</returns>
+    /// <returns>链头单位</returns>
     IFormula GetFirst();
-
-    ///// <summary>
-    ///// 执行方程式
-    ///// </summary>
-    ///// <param name="skillBehavior"></param>
-    //void DoFormula();
 }

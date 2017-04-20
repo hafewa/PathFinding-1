@@ -137,7 +137,8 @@ public class BallisticFactory
         float speed, 
         float radius, 
         bool hasGravity = true, 
-        float grivity = 9.8f)
+        float grivity = 9.8f,
+        TrajectoryAlgorithmType trajectoryType = TrajectoryAlgorithmType.Parabola)
     {
         if (ball == null)
         {
@@ -151,7 +152,10 @@ public class BallisticFactory
             hasGravity,
             grivity);
         result.BallisticArriveTarget = new BallisticArriveTargetForObj(targetObj);
-        // TODO 飞行方式也放入工厂中组合
+
+        // 移动方法
+        result.Move = TrajectoryAlgorithm.Single.GetAlgorithm(trajectoryType);
+
         return result;
     }
 
@@ -592,7 +596,7 @@ public class TrajectoryAlgorithm
 /// </summary>
 public enum TrajectoryAlgorithmType
 {
-    Parabola, // 抛物线
-    Line, // 直线
-    Sine, // 正弦线
+    Parabola = 0, // 抛物线
+    Line = 1, // 直线
+    Sine = 2, // 正弦线
 }
