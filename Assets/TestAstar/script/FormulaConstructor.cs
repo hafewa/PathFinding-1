@@ -16,12 +16,11 @@ public class FormulaConstructor
     /// <returns>构建完成的行为链</returns>
     public static SkillInfo Constructor(string info)
     {
-        SkillInfo result = null;
+        // 技能信息
+        SkillInfo skillInfo = null;
 
         if (info != null)
         {
-            // 技能信息
-            SkillInfo skillInfo = null;
             // 技能ID
             var skillId = 0;
             // 大括号标记
@@ -67,7 +66,7 @@ public class FormulaConstructor
                     var strSkillId = line.Substring(start + 1, length);
                     skillId = Convert.ToInt32(strSkillId);
                     // 创建新技能
-                    //skillInfo = new SkillInfo(skillId);
+                    skillInfo = new SkillInfo(skillId);
                 }
                 else if (line.StartsWith("{"))
                 {
@@ -82,7 +81,7 @@ public class FormulaConstructor
                 else
                 {
                     // 解析内容
-                    if (braket)
+                    if (skillInfo != null && braket)
                     {
                         // 参数列表内容
                         var start = line.IndexOf("(", StringComparison.Ordinal);
@@ -102,17 +101,18 @@ public class FormulaConstructor
                         // 行为类型
                         var type = line.Substring(0, start);
                         // 行为参数
-                        var args = line.Substring(start + 1, end);
+                        var args = line.Substring(start + 1, length);
                         // 消除参数空格
                         args = args.Replace(" ", "");
                         // 使用参数+名称获取IFormula
                         var item = GetFormula(type, args);
+                        skillInfo.AddFormulaItem(item);
                     }
                 }
             }
         }
 
-        return result;
+        return skillInfo;
     }
 
     /// <summary>
@@ -144,9 +144,9 @@ public class FormulaConstructor
                 case "PointToPoint":
                     { 
                         // 解析参数
-                        if (argsArray.Length < 7)
+                        if (argsArray.Length < 6)
                         {
-                            errorMsg = "参数数量错误.需求参数数量:7 实际数量:" + argsArray.Length;
+                            errorMsg = "参数数量错误.需求参数数量:6 实际数量:" + argsArray.Length;
                             break;
                         }
                         // 是否等待完成,特效Key,释放位置(0放技能方, 1目标方),命中位置(0放技能方, 1目标方),速度,飞行轨迹
@@ -166,7 +166,7 @@ public class FormulaConstructor
                         // 解析参数
                         if (argsArray.Length < 4)
                         {
-                            errorMsg = "参数数量错误.需求参数数量:7 实际数量:" + argsArray.Length;
+                            errorMsg = "参数数量错误.需求参数数量:4 实际数量:" + argsArray.Length;
                             break;
                         }
                         // 是否等待完成,特效Key,速度,飞行轨迹
@@ -182,16 +182,17 @@ public class FormulaConstructor
                     // 点特效
                     { 
                         // 解析参数
-                        if (argsArray.Length < 4)
+                        if (argsArray.Length < 5)
                         {
                             errorMsg = "参数数量错误.需求参数数量:4 实际数量:" + argsArray.Length;
                             break;
                         }
                         // 是否等待完成,特效Key,速度,持续时间
                         var effectKey = argsArray[1];
-                        var speed = Convert.ToSingle(argsArray[2]);
-                        var durTime = Convert.ToSingle(argsArray[3]);
-                        result = new PointFormulaItem(formulaType, effectKey, speed, durTime);
+                        var targetPos = Convert.ToInt32(argsArray[2]);
+                        var speed = Convert.ToSingle(argsArray[3]);
+                        var durTime = Convert.ToSingle(argsArray[4]);
+                        result = new PointFormulaItem(formulaType, effectKey, targetPos, speed, durTime);
                     }
                     break;
                 case "Scope":
@@ -238,8 +239,8 @@ public class FormulaConstructor
     /*
      SkillNum(10000)
      {
-        PointToPoint(1,key,0,1,10,1,1),     // 需要等待其结束, 特效key(对应key,或特效path), 释放位置, 命中位置, 速度10, 飞行轨迹类型, 缩放1
-        Point(0,key,0,3,1),                // 不需要等待其结束, 特效key(对应key,或特效path), 释放位置, 持续3秒, 缩放1
+        PointToPoint(1,key,0,1,10,1,1),     // 需要等待其结束, 特效key(对应key,或特效path), 释放位置, 命中位置, 速度10, 飞行轨迹类型
+        Point(0,key,1,0,3),                // 不需要等待其结束, 特效key(对应key,或特效path), 释放位置, 播放速度, 持续3秒
         CollisionDetection(1, 1, 10, 0, 10001),
      }
      
@@ -292,6 +293,19 @@ public class SkillInfo
     }
 
     /// <summary>
+    /// 添加行为生成器
+    /// </summary>
+    /// <param name="formulaItem">行为单元生成器</param>
+    public void AddFormulaItem(IFormulaItem formulaItem)
+    {
+        if (formulaItem == null)
+        {
+            return;
+        }
+        formulaItemList.Add(formulaItem);
+    }
+
+    /// <summary>
     /// 获取行为链
     /// </summary>
     /// <param name="paramsPacker">参数封装</param>
@@ -308,13 +322,47 @@ public class SkillInfo
         {
             if (result != null)
             {
-                result.After(item.GetFormula(paramsPacker));
+                result = result.After(item.GetFormula(paramsPacker));
             }
             else
             {
                 result = item.GetFormula(paramsPacker);
             }
         }
+
+        if (result != null)
+        {
+            result = result.GetFirst();
+        }
+        return result;
+    }
+}
+
+/// <summary>
+/// 碰撞检测器
+/// </summary>
+public class CollisionDetection : IFormulaItem
+{
+    // 使用目标选择器选择范围内适合的单位
+
+
+
+    /// <summary>
+    /// 行为类型
+    /// 0: 不等待其执行结束继续
+    /// 1: 等待期执行结束调用callback
+    /// </summary>
+    public int FormulaType { get; private set; }
+
+    /// <summary>
+    /// 生成行为单元
+    /// </summary>
+    /// <returns>行为单元对象</returns>
+    public IFormula GetFormula(FormulaParamsPacker paramsPacker)
+    {
+        IFormula result = null;
+
+
 
         return result;
     }

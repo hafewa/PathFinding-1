@@ -1,6 +1,5 @@
 ﻿using System;
-
-
+using MonoEX;
 
 
 /// <summary>
@@ -46,6 +45,7 @@ public class PointToObjFormulaItem : IFormulaItem
     /// <returns>构建完成的单个行为</returns>
     public IFormula GetFormula(FormulaParamsPacker paramsPacker)
     {
+        UnityEngine.Debug.Log("点对对象");
         // 验证数据正确, 如果有问题直接抛错误
         string errorMsg = null;
         if (paramsPacker == null)

@@ -9,6 +9,32 @@ using UnityEngine;
 /// </summary>
 public class Looper : MonoBehaviour
 {
+    public static Looper Single
+    {
+        get { return single; }
+    }
+
+    private static Looper single = null;
+
+    /// <summary>
+    /// 初始化looper对象
+    /// </summary>
+    public static void AutoInstance()
+    {
+        if (single != null)
+        {
+            return;
+        }
+        // 创建单位并设置为DontDestroy, 并且挂上Looper脚本
+        var looper = new GameObject("Looper");
+        GameObject.DontDestroyOnLoad(looper);
+        looper.AddComponent<Looper>();
+    }
+
+    void Start()
+    {
+        single = this;
+    }
 
     void Update()
     {
@@ -33,6 +59,7 @@ public class LooperManager : LooperAbstract<ILoopItem>
         {
             if (single == null)
             {
+                Looper.AutoInstance();
                 single = new LooperManager();
             }
             return single;

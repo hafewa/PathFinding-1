@@ -285,7 +285,7 @@ public class BallisticArriveTargetForObj : BallisticArriveTarget
         if (ball != null && TargetObj != null)
         {
             // 判断位置+半径是否到达目标
-            if ((ball.Position - TargetObj.transform.localPosition).magnitude <= ball.Radius)
+            if ((ball.Position - TargetObj.transform.position).magnitude <= ball.Radius)
             {
                 result = true;
             }
@@ -481,7 +481,7 @@ public class TrajectoryAlgorithm
                             var tmpDir = ballistic.Direction.normalized * ballistic.Speed;
                             ballistic.transform.forward = tmpDir;
                             ballistic.Position += tmpDir * Time.deltaTime;
-                            ballistic.Direction = target.normalized;
+                            ballistic.Direction = (target - ballistic.Position).normalized;
                         }
                     };
                     #endregion
@@ -579,7 +579,7 @@ public class TrajectoryAlgorithm
             }
             else if (ballisticTarget is BallisticArriveTargetForObj)
             {
-                result = ((BallisticArriveTargetForObj) ballisticTarget).TargetObj.transform.localPosition;
+                result = ((BallisticArriveTargetForObj) ballisticTarget).TargetObj.transform.position;
             }
             else if (ballisticTarget is BallisticArriveTargetForPosition)
             {

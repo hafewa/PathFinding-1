@@ -60,6 +60,7 @@ public class PointToPointFormulaItem : IFormulaItem
     /// <returns>构建完成的单个行为</returns>
     public IFormula GetFormula(FormulaParamsPacker paramsPacker)
     {
+        UnityEngine.Debug.Log("点对对象");
         // 验证数据正确, 如果有问题直接抛错误
         string errorMsg = null;
         if (paramsPacker == null)
@@ -79,12 +80,14 @@ public class PointToPointFormulaItem : IFormulaItem
         {
             throw new Exception(errorMsg);
         }
+        var tmpRelsPos = releasePos;
+        var tmpRecvPos = receivePos;
 
         IFormula result = new Formula((callback) =>
         {
             // 判断发射与接收位置
-            var releasePosition = releasePos == 0 ? paramsPacker.StartPos : paramsPacker.TargetPos;
-            var receivePosition = receivePos == 0 ? paramsPacker.StartPos : paramsPacker.TargetPos;
+            var releasePosition = tmpRelsPos == 0 ? paramsPacker.StartPos : paramsPacker.TargetPos;
+            var receivePosition = tmpRecvPos == 0 ? paramsPacker.StartPos : paramsPacker.TargetPos;
             EffectsFactory.Single.CreatePointToPointEffect(EffectKey, paramsPacker.ItemParent, releasePosition,
                                 receivePosition, paramsPacker.Scale, Speed, FlyType, callback).Begin();
         }, FormulaType);

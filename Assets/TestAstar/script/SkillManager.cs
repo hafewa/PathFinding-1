@@ -58,10 +58,13 @@ public class SkillManager
             // 顺序执行每一个操作
             do
             {
+
+                UnityEngine.Debug.Log("执行");
                 var isWaiting = true;
                 // 创建回调
                 Action callback = () =>
                 {
+                    UnityEngine.Debug.Log("Callback");
                     isWaiting = false;
                 };
                 topNode.Do(callback);
@@ -73,6 +76,10 @@ public class SkillManager
                     }
                 }
                 topNode = topNode.NextFormula;
+                if (topNode == null)
+                {
+                    UnityEngine.Debug.Log("结束了");
+                }
             } while (topNode != null);
         }
         yield break;

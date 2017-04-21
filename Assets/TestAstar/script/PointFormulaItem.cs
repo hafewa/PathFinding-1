@@ -19,6 +19,13 @@ public class PointFormulaItem : IFormulaItem
     public string EffectKey { get; private set; }
 
     /// <summary>
+    /// 特效出现位置
+    /// 0: 释放者位置
+    /// 1: 被释放者位置
+    /// </summary>
+    public int TargetPos { get; private set; }
+
+    /// <summary>
     /// 飞行速度
     /// </summary>
     public float Speed { get; private set; }
@@ -33,12 +40,14 @@ public class PointFormulaItem : IFormulaItem
     /// </summary>
     /// <param name="formulaType">是否等待执行完毕 0 否, 1 是</param>
     /// <param name="effectKey">特效key(或路径)</param>
+    /// <param name="targetPos">出现位置</param>
     /// <param name="speed">播放速度</param>
     /// <param name="durTime">持续时间</param>
-    public PointFormulaItem(int formulaType, string effectKey, float speed, float durTime)
+    public PointFormulaItem(int formulaType, string effectKey, int targetPos, float speed, float durTime)
     {
         FormulaType = formulaType;
         EffectKey = effectKey;
+        TargetPos = targetPos;
         Speed = speed;
         DurTime = durTime;
     }
@@ -66,10 +75,13 @@ public class PointFormulaItem : IFormulaItem
             throw new Exception(errorMsg);
         }
 
+        var tmpTargetPos = TargetPos;
+
         IFormula result = new Formula((callback) =>
         {
+            var pos = tmpTargetPos == 0 ? paramsPacker.StartPos : paramsPacker.TargetPos;
             // 判断发射与接收位置
-            EffectsFactory.Single.CreatePointEffect(EffectKey, paramsPacker.ItemParent, paramsPacker.StartPos, paramsPacker.Scale, DurTime, Speed, callback).Begin();
+            EffectsFactory.Single.CreatePointEffect(EffectKey, paramsPacker.ItemParent, pos, paramsPacker.Scale, DurTime, Speed, callback).Begin();
         }, FormulaType);
 
         return result;

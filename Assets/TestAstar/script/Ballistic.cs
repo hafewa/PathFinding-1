@@ -18,8 +18,8 @@ public class Ballistic : MonoBehaviour , IBallistic
 
     public Vector3 Position
     {
-        get { return transform.localPosition; }
-        set { transform.localPosition = value; }
+        get { return transform.position; }
+        set { transform.position = value; }
     }
 
     /// <summary>
