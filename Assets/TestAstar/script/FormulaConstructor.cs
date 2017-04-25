@@ -200,9 +200,30 @@ public class FormulaConstructor
                     // TODO 仔细考虑实现 应该会比较耗
                     break;
                 case "CollisionDetection":
-                    // 碰撞检测
-                    {
-                        
+                    // 碰撞检测, 二级伤害判断
+                {
+                        // 参数最低数量
+                        var argsCount = 5;
+                        // 解析参数
+                        if (argsArray.Length < argsCount)
+                        {
+                            errorMsg = "参数数量错误.需求参数数量最少:5 实际数量:" + argsArray.Length;
+                            break;
+                        }
+                        // 是否等待完成, 目标数量, 目标阵营(-1:都触发, 0: 己方, 1: 非己方), 检测范围形状(0圆, 1方), 
+                        // 碰撞单位被释放技能ID, 范围大小(方的就取两个值, 圆的就取第一个值当半径, 有更多的参数都放进来)
+                        var targetCount = Convert.ToInt32(argsArray[1]);
+                        var targetTypeCamps = (TargetCampsType)Enum.Parse(typeof (TargetCampsType), argsArray[2]);
+                        var scopeType = (GraphicType)Enum.Parse(typeof (GraphicType), argsArray[3]);
+                        var skillNum = Convert.ToInt32(argsArray[4]);
+                        float[] scopeArgs = new float[argsArray.Length - argsCount];
+                        // 范围参数
+                        for (var i = 0; i < argsArray.Length - argsCount; i++)
+                        {
+                            scopeArgs[i] = Convert.ToSingle(args[i + argsCount]);
+                        }
+
+                        result = new CollisionDetection(formulaType, targetCount, targetTypeCamps, scopeType, scopeArgs, skillNum);
                     }
                     break;
                 case "Audio":
@@ -217,9 +238,22 @@ public class FormulaConstructor
 
                     }
                     break;
+                //case "Demage":
+                //    // 伤害
+                //    {
+                //        
+                //    }
+                //    break;
+                //case "Cure":
+                //    // 治疗
+                //    {
+
+                //    }
+                //    break;
                 case "Calculate":
                     // 结果结算
                     {
+                        // TODO 伤害/治疗结算
 
                     }
                     break;
@@ -252,7 +286,7 @@ public class FormulaConstructor
     // Scope 范围特效                 参数 是否等待完成,特效Key,释放位置(0放技能方, 1目标方),持续时间,范围半径
 
     // --------------目标选择方式---------------
-    // CollisionDetection 碰撞检测    参数 是否等待完成, 检测位置(0放技能方, 1目标方), 目标数量,检测范围形状(0圆, 1方),碰撞单位被释放技能ID
+    // CollisionDetection 碰撞检测    参数 是否等待完成, 目标数量, 检测位置(0放技能方, 1目标方),检测范围形状(0圆, 1方), 范围大小(方的就取两个值, 圆的就取第一个值当半径), 目标阵营(-1:都触发, 0: 己方, 1: 非己方),碰撞单位被释放技能ID
     //{
     //  被释放技能
     //}
@@ -263,7 +297,7 @@ public class FormulaConstructor
     // Buff buff                      参数 是否等待完成,buffID
 
     // -----------------结算--------------------
-    // Calculate 结算                 参数 是否等待完成,伤害,治疗
+    // Calculate 结算                 参数 是否等待完成,伤害,治疗,目标数据,技能数据
 
 
 }
@@ -276,7 +310,7 @@ public class SkillInfo
     /// <summary>
     /// 技能ID
     /// </summary>
-    public int SkillId { get; private set; }
+    public int SkillNum { get; private set; }
 
     /// <summary>
     /// 技能行为单元列表
@@ -286,10 +320,10 @@ public class SkillInfo
     /// <summary>
     /// 构造技能信息
     /// </summary>
-    /// <param name="skillId">技能ID</param>
-    public SkillInfo(int skillId)
+    /// <param name="skillNum">技能ID</param>
+    public SkillInfo(int skillNum)
     {
-        SkillId = skillId;
+        SkillNum = skillNum;
     }
 
     /// <summary>
@@ -318,6 +352,9 @@ public class SkillInfo
         }
         IFormula result = null;
 
+        // 设置技能ID
+        paramsPacker.SkillNum = SkillNum;
+
         foreach (var item in formulaItemList)
         {
             if (result != null)
@@ -344,15 +381,57 @@ public class SkillInfo
 public class CollisionDetection : IFormulaItem
 {
     // 使用目标选择器选择范围内适合的单位
-
-
-
+    
     /// <summary>
     /// 行为类型
     /// 0: 不等待其执行结束继续
     /// 1: 等待期执行结束调用callback
     /// </summary>
     public int FormulaType { get; private set; }
+
+    /// <summary>
+    /// 选取目标数量上限
+    /// </summary>
+    public int TargetCount { get; private set; }
+
+    /// <summary>
+    /// 目标阵营
+    /// </summary>
+    public TargetCampsType TargetCamps { get; private set; }
+
+    /// <summary>
+    /// 检测范围形状
+    /// </summary>
+    public GraphicType ScopeType { get; private set; }
+
+    /// <summary>
+    /// 范围描述参数
+    /// </summary>
+    public float[] ScopeParams { get; private set; }
+
+    /// <summary>
+    /// 技能ID
+    /// </summary>
+    public int SkillNum { get; private set; }
+
+    /// <summary>
+    /// 初始化碰撞检测
+    /// </summary>
+    /// <param name="formulaType">行为单元类型(0: 不等待, 1: 等待)</param>
+    /// <param name="targetCount">目标数量</param>
+    /// <param name="targetCamps">目标阵营</param>
+    /// <param name="scopeType">范围类型</param>
+    /// <param name="scopeParams">范围参数</param>
+    /// <param name="skillNum">释放技能ID</param>
+    public CollisionDetection(int formulaType, int targetCount, TargetCampsType targetCamps, GraphicType scopeType, float[] scopeParams, int skillNum)
+    {
+        this.FormulaType = formulaType;
+        this.TargetCount = targetCount;
+        this.TargetCamps = targetCamps;
+        this.ScopeType = scopeType;
+        this.ScopeParams = scopeParams;
+        this.SkillNum = skillNum;
+    }
 
     /// <summary>
     /// 生成行为单元
@@ -363,7 +442,516 @@ public class CollisionDetection : IFormulaItem
         IFormula result = null;
 
 
+        // TODO 技能数据应该在paramsPacker中
+
+        // 检测范围
+        // 获取图形对象
+
+        // 搜索位置,形状(包含大小),目标数量,释放技能ID
+        // 检查范围内对象
+        // 获取目标单位个数个单位
+        // 对他们释放技能(技能编号)
+        // 
+
 
         return result;
+    }
+}
+
+/// <summary>
+/// 目标阵营类型
+/// </summary>
+public enum TargetCampsType
+{
+    All = -1,
+    Same = 0,
+    Different = 1
+}
+
+/// <summary>
+/// 碰撞检测图形接口
+/// </summary>
+public interface ICollisionGraphics
+{
+    /// <summary>
+    /// 获取图形类型
+    /// </summary>
+    /// <returns></returns>
+    GraphicType GraphicType { get; set; }
+
+    /// <summary>
+    /// 图形所在位置
+    /// </summary>
+    Vector2 Postion { get; set; }
+
+    /// <summary>
+    /// 检测与其他图形的碰撞
+    /// </summary>
+    /// <param name="graphics">其他图形对象</param>
+    /// <returns></returns>
+    bool CheckCollision(ICollisionGraphics graphics);
+}
+
+
+public abstract class CollisionGraphics : ICollisionGraphics
+{
+
+    /// <summary>
+    /// 获取图形类型
+    /// </summary>
+    public GraphicType GraphicType
+    {
+        get { return graphicType; }
+        set { graphicType = value; }
+    }
+
+    /// <summary>
+    /// 图形所在位置
+    /// </summary>
+    public Vector2 Postion { get; set; }
+
+
+    /// <summary>
+    /// 图形类型
+    /// </summary>
+    private GraphicType graphicType;
+
+
+    /// <summary>
+    /// 检测与其他图形的碰撞
+    /// </summary>
+    /// <param name="graphics">其他图形对象</param>
+    /// <returns>是否碰撞</returns>
+    public bool CheckCollision(ICollisionGraphics graphics)
+    {
+        return false;
+    }
+
+    /// <summary>
+    /// 检测是否碰撞
+    /// </summary>
+    /// <param name="item1"></param>
+    /// <param name="item2"></param>
+    /// <returns></returns>
+    public static bool CheckCollision(ICollisionGraphics item1, ICollisionGraphics item2)
+    {
+        var result = false;
+        switch (item1.GraphicType)
+        {
+            case GraphicType.Circle:
+                switch (item1.GraphicType)
+                {
+                    case GraphicType.Circle:
+                        break;
+                    // 检测1 半径和是否大于距离
+                    case GraphicType.Rect:
+                        break;
+                    // 检测2 半径到四边距离
+                    case GraphicType.Sector:
+                        break;
+                        // 检测3 圆与扇形
+                }
+                break;
+
+            case GraphicType.Rect:
+                switch (item1.GraphicType)
+                {
+                    case GraphicType.Circle:
+                        break;
+                    // 检测2 半径到四边距离
+                    case GraphicType.Rect:
+                        break;
+                    // 检测4 矩形与矩形
+                    case GraphicType.Sector:
+                        break;
+                        // 检测5 矩形与扇形
+                }
+                break;
+
+            case GraphicType.Sector:
+                switch (item1.GraphicType)
+                {
+                    case GraphicType.Circle:
+                        break;
+                    // 检测3 扇形与圆
+                    case GraphicType.Rect:
+                        break;
+                    // 检测5 扇形与矩形
+                    case GraphicType.Sector:
+                        break;
+                        // 检测6 扇形与扇形
+                }
+                break;
+
+        }
+        return result;
+    }
+
+
+    /// <summary>
+    /// 圆圆碰撞检测
+    /// </summary>
+    /// <param name="circle1">圆1</param>
+    /// <param name="circle2">圆2</param>
+    /// <returns>是否碰撞</returns>
+    public static bool CheckCircleAndCircle(ICollisionGraphics circle1, ICollisionGraphics circle2)
+    {
+        var result = false;
+
+        var circleGraphics1 = circle1 as CircleGraphics;
+        var circleGraphics2 = circle2 as CircleGraphics;
+
+        if (circleGraphics1 != null && circleGraphics2 != null)
+        {
+            // 检查两圆的半径与距离大小
+            result = (circleGraphics1.Postion - circleGraphics2.Postion).magnitude <
+                     circleGraphics1.Radius + circleGraphics2.Radius;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 圆方碰撞检测
+    /// </summary>
+    /// <param name="circle">圆</param>
+    /// <param name="rect">方</param>
+    /// <returns>是否碰撞</returns>
+    public static bool CheckCircleAndRect(ICollisionGraphics circle, ICollisionGraphics rect)
+    {
+        // 转换格式
+        var circleGraphics = circle as CircleGraphics;
+        var rectGraphics = rect as RectGraphics;
+
+        if (circleGraphics != null && rectGraphics != null)
+        {
+            // 计算两轴长度
+            var halfWidth = rectGraphics.Width*0.5f;
+            var halfHeight = rectGraphics.Height*0.5f;
+            var raduis = circleGraphics.Radius;
+            //var xAxisLength = Utils.GetDistance(rectGraphics.Postion, rectGraphics.Postion + new Vector2());
+
+            // 右侧中心点相对向量
+            var pointRightCenter = new Vector2((float)Math.Cos(rectGraphics.Rotation) * halfWidth, (float)Math.Sin(rectGraphics.Rotation) * halfWidth);
+            // 上侧中心点相对向量
+            var pointTopCenter = new Vector2((float)Math.Sin(rectGraphics.Rotation) * halfHeight, (float)Math.Cos(rectGraphics.Rotation) * halfHeight);
+
+            var toRightDistance = Utils.GetDistancePointToLine(rectGraphics.Postion, rectGraphics.Postion + pointRightCenter, circle.Postion);
+            var toTopDistance = Utils.GetDistancePointToLine(rectGraphics.Postion, rectGraphics.Postion + pointTopCenter, circle.Postion);
+
+            if (toRightDistance > halfWidth + raduis)
+            {
+                return false;
+            }
+            if (toTopDistance > halfHeight + raduis)
+            {
+                return false;
+            }
+
+            if (toRightDistance < halfWidth)
+            {
+                return true;
+            }
+            if (toTopDistance < halfHeight)
+            {
+                return true;
+            }
+
+            var distanceX = toRightDistance - halfWidth;
+            var distanceY = toTopDistance - halfHeight;
+            return (distanceX*distanceX + distanceY*distanceY) <= raduis*raduis;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 扇圆碰撞检测
+    /// </summary>
+    /// <param name="sector">扇形</param>
+    /// <param name="circle">圆形</param>
+    /// <returns></returns>
+    public static bool CheckSectorAndCircle(ICollisionGraphics sector, ICollisionGraphics circle)
+    {
+        var result = false;
+
+        var sectorGraphics = sector as SectorGraphics;
+        var circleGraphics = circle as CircleGraphics;
+        if (sectorGraphics != null && circleGraphics != null)
+        {
+            
+        }
+
+
+        return result;
+    }
+
+    /// <summary>
+    /// 方方碰撞检测
+    /// </summary>
+    /// <param name="rect1">方形1</param>
+    /// <param name="rect2">方形2</param>
+    /// <returns>是否碰撞</returns>
+    public static bool CheckRectAndRect(ICollisionGraphics rect1, ICollisionGraphics rect2)
+    {
+
+        // 转换类型
+        var rectGraphics1 = rect1 as RectGraphics;
+        var rectGraphics2 = rect2 as RectGraphics;
+
+        if (rectGraphics1 != null && rectGraphics2 != null)
+        {
+            var axisArray = new[]
+            {
+                rectGraphics1.HorizonalAxis,
+                rectGraphics1.VerticalAxis,
+                rectGraphics2.HorizonalAxis,
+                rectGraphics2.VerticalAxis
+            };
+
+            for (var i = 0; i < axisArray.Length; i++)
+            {
+                var axis = axisArray[i];
+                if (
+                    RectGraphics.GetProjectionRaduis(axis, rectGraphics1.Width, rectGraphics1.Height,
+                        rectGraphics1.HorizonalAxis, rectGraphics1.VerticalAxis) +
+                    RectGraphics.GetProjectionRaduis(axis, rectGraphics2.Width, rectGraphics2.Height,
+                        rectGraphics2.HorizonalAxis, rectGraphics2.VerticalAxis) <=
+                    Vector2.Dot(rectGraphics1.Postion - rectGraphics2.Postion, axis))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 扇方碰撞检测
+    /// </summary>
+    /// <param name="sector">扇形</param>
+    /// <param name="rect">方形</param>
+    /// <returns>是否碰撞</returns>
+    public static bool CheckSectorAndRect(ICollisionGraphics sector, ICollisionGraphics rect)
+    {
+        var result = false;
+
+
+
+        return result;
+    }
+
+    /// <summary>
+    /// 扇形扇形碰撞检测
+    /// </summary>
+    /// <param name="sector1">扇形1</param>
+    /// <param name="sector2">扇形2</param>
+    /// <returns>是否碰撞</returns>
+    public static bool CheckSectorAndSector(ICollisionGraphics sector1, ICollisionGraphics sector2)
+    {
+        var result = false;
+
+
+
+        return result;
+    }
+}
+
+/// <summary>
+/// 矩形图形
+/// </summary>
+public class RectGraphics : CollisionGraphics
+{
+    
+    /// <summary>
+    /// 举行宽度
+    /// </summary>
+    public float Width { get; set; }
+
+    /// <summary>
+    /// 举行高度
+    /// </summary>
+    public float Height { get; set; }
+
+    /// <summary>
+    /// 旋转角度
+    /// </summary>
+    public float Rotation {
+        get { return rotation; }
+        set
+        {
+            rotation = value;
+            if (rotation > 360 || rotation < 360)
+            {
+                rotation %= 360;
+            }
+
+            // 重置相对水平轴与相对垂直轴
+            HorizonalAxis = Utils.GetHorizonalTestLine(rotation);
+            VerticalAxis = Utils.GetVerticalTextLine(rotation);
+        }
+    }
+
+
+    /// <summary>
+    /// 相对水平轴
+    /// </summary>
+    public Vector2 HorizonalAxis { get; private set; }
+
+    /// <summary>
+    /// 相对垂直轴
+    /// </summary>
+    public Vector2 VerticalAxis { get; private set; }
+
+    /// <summary>
+    /// 图形类型
+    /// </summary>
+    private GraphicType graphicType;
+
+    /// <summary>
+    /// 旋转角度
+    /// </summary>
+    private float rotation = 0f;
+
+
+    /// <summary>
+    /// 初始化
+    /// </summary>
+    /// <param name="position">位置</param>
+    /// <param name="width">宽度</param>
+    /// <param name="height">高度</param>
+    /// <param name="rotation">旋转角度</param>
+    public RectGraphics(Vector2 position, float width, float height, float rotation)
+    {
+        Rotation = rotation;
+        Postion = position;
+        Width = width;
+        Height = height;
+    }
+
+
+    /// <summary>
+    /// 获取Axis2映射到Axis1的值
+    /// </summary>
+    /// <param name="axis">映射轴</param>
+    /// <param name="width">宽度</param>
+    /// <param name="height">高度</param>
+    /// <param name="horizonalAxis">横向轴</param>
+    /// <param name="verticalAxis">纵向轴</param>
+    /// <returns>映射值</returns>
+    public static float GetProjectionRaduis(Vector2 axis, float width, float height, Vector2 horizonalAxis, Vector2 verticalAxis)
+    {
+        // 加入旋转
+        var halfWidth = width / 2;
+        var halfHeight = height / 2;
+        float projectionAxisX = Vector2.Dot(axis, horizonalAxis);
+        float projectionAxisY = Vector2.Dot(axis, verticalAxis);
+
+        return halfWidth * projectionAxisX + halfHeight * projectionAxisY;
+    }
+}
+
+
+/// <summary>
+/// 圆形
+/// </summary>
+public class CircleGraphics : ICollisionGraphics
+{
+
+    /// <summary>
+    /// 获取图形类型
+    /// </summary>
+    public GraphicType GraphicType
+    {
+        get { return graphicType; }
+        set { graphicType = value; }
+    }
+
+    /// <summary>
+    /// 图形所在位置
+    /// </summary>
+    public Vector2 Postion { get; set; }
+    
+
+    /// <summary>
+    /// 旋转角度
+    /// </summary>
+    public float Rotation { get; set; }
+
+    /// <summary>
+    /// 半径
+    /// </summary>
+    public float Radius { get; set; }
+
+
+    /// <summary>
+    /// 图形类型
+    /// </summary>
+    private GraphicType graphicType;
+
+
+    /// <summary>
+    /// 检测与其他图形的碰撞
+    /// </summary>
+    /// <param name="graphics">其他图形对象</param>
+    /// <returns>是否碰撞</returns>
+    public bool CheckCollision(ICollisionGraphics graphics)
+    {
+        return false;
+    }
+}
+
+
+
+public class SectorGraphics : ICollisionGraphics
+{
+
+    /// <summary>
+    /// 获取图形类型
+    /// </summary>
+    public GraphicType GraphicType
+    {
+        get { return graphicType; }
+        set { graphicType = value; }
+    }
+
+    /// <summary>
+    /// 图形所在位置
+    /// </summary>
+    public Vector2 Postion { get; set; }
+
+
+    /// <summary>
+    /// 旋转角度
+    /// </summary>
+    public float Rotation { get; set; }
+
+    /// <summary>
+    /// 半径
+    /// </summary>
+    public float Radius { get; set; }
+
+    /// <summary>
+    /// 扇形打开角度
+    /// 0-360
+    /// </summary>
+    public float OpenAngle { get; set; }
+
+
+    /// <summary>
+    /// 图形类型
+    /// </summary>
+    private GraphicType graphicType;
+
+
+    /// <summary>
+    /// 检测与其他图形的碰撞
+    /// </summary>
+    /// <param name="graphics">其他图形对象</param>
+    /// <returns>是否碰撞</returns>
+    public bool CheckCollision(ICollisionGraphics graphics)
+    {
+        return false;
     }
 }

@@ -35,6 +35,7 @@ public class TestFormulaConstruct : MonoBehaviour
                 TargetPos = new Vector3(100, 0, 0),
             });
 
+            // TODO 如何封装数据?
             SkillManager.Single.DoFormula(formula.GetFirst());
 	    }
 	}

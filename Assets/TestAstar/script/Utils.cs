@@ -245,6 +245,58 @@ public class Utils
         return result;
     }
 
+    // ---------------------------图形-------------------------------
+
+    /// <summary>
+    /// 获取矩形水平检测线
+    /// </summary>
+    /// <param name="rotation">旋转角度-360-360°</param>
+    /// <returns>水平检测线标量</returns>
+    public static Vector2 GetHorizonalTestLine(float rotation)
+    {
+        return new Vector2((float)Math.Cos(rotation), (float)Math.Sin(rotation));
+    }
+
+    /// <summary>
+    /// 获取矩形垂直检测线
+    /// </summary>
+    /// <param name="rotation">旋转角度-360-360°</param>
+    /// <returns>垂直检测线标量</returns>
+    public static Vector2 GetVerticalTextLine(float rotation)
+    {
+        return new Vector2(-(float)Math.Sin(rotation), (float)Math.Cos(rotation));
+    }
+
+    /// <summary>
+    /// 计算点到线的距离
+    /// </summary>
+    /// <param name="lineP1">线点1</param>
+    /// <param name="lineP2">线点2</param>
+    /// <param name="point">求距离点</param>
+    /// <returns>点到线最短距离</returns>
+    public static float GetDistancePointToLine(Vector2 lineP1, Vector2 lineP2, Vector2 point)
+    {
+        float a = lineP2.y - lineP1.y;
+        float b = lineP1.x - lineP2.x;
+        float c = lineP2.x * lineP1.y - lineP1.x * lineP2.y;
+
+        return (float)(Math.Abs(a * point.x + b * point.y + c) / Math.Sqrt(a * a + b * b));
+
+    }
+
+    /// <summary>
+    /// 计算两点之间距离
+    /// </summary>
+    /// <param name="point1">点1</param>
+    /// <param name="point2">点2</param>
+    /// <returns>距离</returns>
+    public static float GetDistancePointToPoint(Vector2 point1, Vector2 point2)
+    {
+        var xOff = (point2.x - point1.x);
+        var yOff = (point2.y - point2.y);
+        return (float)Math.Sqrt(xOff * xOff + yOff * yOff);
+    }
+
     // ---------------------------文件操作----------------------------
 
     /// <summary>

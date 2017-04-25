@@ -119,7 +119,7 @@ public class AstarTest : MonoBehaviour {
         schoolManager.Init(loadMapPos.x, loadMapPos.z, MapWidth, MapHeight, UnitWidth, null);
         InitMapInfo();
     }
-
+    
     void Update()
     {
         // 控制
