@@ -196,6 +196,16 @@ public class AstarTest : MonoBehaviour {
         {
             mainCamera.transform.localPosition = new Vector3(mainCamera.transform.localPosition.x, mainCamera.transform.localPosition.y - 1, mainCamera.transform.localPosition.z);
         }
+        if (Input.GetKey(KeyCode.P))
+        {
+            // 暂停
+            schoolManager.Pause();
+        }
+        if (Input.GetKey(KeyCode.G))
+        {
+            // 继续
+            schoolManager.GoOn();
+        }
     }
 
     /// <summary>

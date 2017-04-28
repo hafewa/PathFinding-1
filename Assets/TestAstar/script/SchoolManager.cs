@@ -73,6 +73,11 @@ public class SchoolManager : MonoBehaviour
     /// </summary>
     private int unitWidth = 1;
 
+    /// <summary>
+    /// 暂停标志
+    /// </summary>
+    private bool pause = false;
+
 
     // -----------------------------公有方法------------------------------
 
@@ -126,6 +131,22 @@ public class SchoolManager : MonoBehaviour
         GroupList.Clear();
     }
 
+    /// <summary>
+    /// 暂停
+    /// </summary>
+    public void Pause()
+    {
+        pause = true;
+    }
+
+    /// <summary>
+    /// 继续
+    /// </summary>
+    public void GoOn()
+    {
+        pause = false;
+    }
+
 
     // ------------------------私有方法--------------------------
 
@@ -137,7 +158,7 @@ public class SchoolManager : MonoBehaviour
     private void AllMemberMove(IList<PositionObject> memberList)
     {
         // 验证数据有效性
-        if (memberList == null || memberList.Count == 0)
+        if (memberList == null || memberList.Count == 0 || pause)
         { return; }
 
         // 前方角度/2

@@ -86,15 +86,6 @@ public class SchoolBehaviour : PositionObject
     /// </summary>
     public SchoolItemState State = SchoolItemState.Unstart;
 
-    //-----------------------------只读属性----------------------------------
-
-    /// <summary>
-    /// 组队编号
-    /// </summary>
-    public SchoolGroup Group {
-        get { return group; }
-    }
-
     /// <summary>
     /// 开始移动时调用
     /// </summary>
@@ -110,6 +101,15 @@ public class SchoolBehaviour : PositionObject
     /// 不是所有对象都会掉用该回调, 只有到达终点的会调用
     /// </summary>
     public Action<GameObject> Complete { get; set; }
+
+    //-----------------------------只读属性----------------------------------
+
+    /// <summary>
+    /// 组队编号
+    /// </summary>
+    public SchoolGroup Group {
+        get { return group; }
+    }
 
     /// <summary>
     /// 是否在移动

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
 
@@ -232,6 +233,96 @@ public class Utils
         Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
     }
 
+    /// <summary>
+    /// 回执矩形
+    /// </summary>
+    /// <param name="position">举行中心位置</param>
+    /// <param name="width">举行宽度</param>
+    /// <param name="height">举行高度</param>
+    /// <param name="rotation">基于矩形中心旋转角度</param>
+    /// <param name="color">绘制颜色</param>
+    public static void DrawRect(Vector3 position, float width, float height, float rotation, Color color)
+    {
+        var angle = rotation*Math.PI/360;
+        var halfWidth = width*0.5f;
+        var halfHeight = height*0.5f;
+
+        var sin = (float) (Math.Sin(angle));
+        var cos = (float) (Math.Cos(angle));
+        var left = (-halfWidth);
+        var right = (halfWidth);
+        var top = (halfHeight);
+        var bottom = (-halfHeight);
+        var point1 = new Vector3(left * cos - bottom * sin, 0, left * sin + bottom * cos) + position;
+        var point2 = new Vector3(left * cos - top * sin, 0, left * sin + top * cos) + position;
+        var point3 = new Vector3(right * cos - top * sin, 0, right * sin + top * cos) + position;
+        var point4 = new Vector3(right * cos - bottom * sin, 0, right * sin + bottom * cos) + position;
+        Debug.DrawLine(point1, point2, color);
+        Debug.DrawLine(point2, point3, color);
+        Debug.DrawLine(point3, point4, color);
+        Debug.DrawLine(point4, point1, color);
+    }
+
+    /// <summary>
+    /// 绘制扇形
+    /// </summary>
+    /// <param name="position">圆心位置</param>
+    /// <param name="radius">圆半径</param>
+    /// <param name="rotation">扇形旋转角度</param>
+    /// <param name="openAngle">扇形开口角度</param>
+    /// <param name="color">绘制颜色</param>
+    public static void DrawSector(Vector3 position, float radius, float rotation, float openAngle, Color color)
+    {
+
+    }
+
+    /// <summary>
+    ///  绘制三角形
+    /// </summary>
+    /// <param name="point1">三角形点1</param>
+    /// <param name="point2">三角形点2</param>
+    /// <param name="point3">三角形点3</param>
+    /// <param name="color">绘制颜色</param>
+    public static void DrawTriangle(Vector3 point1, Vector3 point2, Vector3 point3, Color color)
+    {
+        Debug.DrawLine(point1, point2, color);
+        Debug.DrawLine(point2, point3, color);
+        Debug.DrawLine(point3, point1, color);
+    }
+
+
+    /// <summary>
+    /// 绘制圆
+    /// </summary>
+    /// <param name="position"></param>
+    /// <param name="radius"></param>
+    /// <param name="color">颜色</param>
+    public static void DrawCircle(Vector3 position, float radius, Color color)
+    {
+        // 绘制圆环
+        Vector3 beginPoint = Vector3.zero;
+        Vector3 firstPoint = Vector3.zero;
+        for (float theta = 0; theta < 2 * Mathf.PI; theta += 0.1f)
+        {
+            float x = radius * Mathf.Cos(theta);
+            float z = radius * Mathf.Sin(theta);
+            Vector3 endPoint = position + new Vector3(x, 0, z);
+            if (Math.Abs(theta) < Utils.ApproachZero)
+            {
+                firstPoint = endPoint;
+            }
+            else
+            {
+                Debug.DrawLine(beginPoint, endPoint, color);
+            }
+            beginPoint = endPoint;
+        }
+
+        // 绘制最后一条线段
+        Debug.DrawLine(firstPoint, beginPoint, color);
+
+        Debug.DrawLine(firstPoint, firstPoint + new Vector3(radius, 0, 0), color);
+    }
 
     /// <summary>
     /// 获取node的key值
@@ -254,17 +345,20 @@ public class Utils
     /// <returns>水平检测线标量</returns>
     public static Vector2 GetHorizonalTestLine(float rotation)
     {
-        return new Vector2((float)Math.Cos(rotation), (float)Math.Sin(rotation));
+        var angle = rotation * Math.PI / 360;
+        return new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle));
     }
 
     /// <summary>
     /// 获取矩形垂直检测线
     /// </summary>
     /// <param name="rotation">旋转角度-360-360°</param>
+    /// <param name="radius">检测线长度</param>
     /// <returns>垂直检测线标量</returns>
-    public static Vector2 GetVerticalTextLine(float rotation)
+    public static Vector2 GetVerticalTestLine(float rotation, float radius = 1f)
     {
-        return new Vector2(-(float)Math.Sin(rotation), (float)Math.Cos(rotation));
+        var angle = rotation * Math.PI / 360;
+        return new Vector2(-(float)Math.Sin(angle) * radius, (float)Math.Cos(angle) * radius);
     }
 
     /// <summary>
