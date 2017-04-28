@@ -353,7 +353,7 @@ public class TestTargetSelecter : MonoBehaviour {
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="quadTree"></param>
-    private void DrawQuadTreeLine<T>(QuadTree<T> quadTree) where T : BaseMamber, IGraphical<Rectangle>
+    private void DrawQuadTreeLine<T>(QuadTree<T> quadTree) where T : IBaseMamber, IGraphical<Rectangle>
     {
         // 绘制四叉树边框
         Utils.DrawRect(quadTree.GetRectangle(), Color.white);
