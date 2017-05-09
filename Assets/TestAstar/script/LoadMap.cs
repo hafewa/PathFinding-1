@@ -40,6 +40,21 @@ public class LoadMap : MonoBehaviour
     /// </summary>
     public Color LineColor = Color.red;
 
+    /// <summary>
+    /// 地图宽度
+    /// </summary>
+    public int MapWidth { get { return mapWidth; } }
+
+    /// <summary>
+    /// 地图高度
+    /// </summary>
+    public int MapHeight { get { return mapHeight;} }
+
+    /// <summary>
+    /// 地图单元宽度
+    /// </summary>
+    public int UnitWidth { get { return unitWidth;} }
+
 
     //-------------------------公共常量-----------------------------
 
@@ -111,7 +126,8 @@ public class LoadMap : MonoBehaviour
     /// 初始化 将地图数据传入
     /// </summary>
     /// <param name="map">地图数据</param>
-    public IList<GameObject> Init(int[][] map, int unitWidth)
+    /// <param name="unitWidth">地图单位宽度</param>
+    public IList<FixtureData> Init(int[][] map, int unitWidth)
     {
         // 设置本地数据
         mapData = map;
@@ -153,7 +169,7 @@ public class LoadMap : MonoBehaviour
     /// <summary>
     /// 刷新地图
     /// </summary>
-    public IList<GameObject> RefreshMap()
+    public IList<FixtureData> RefreshMap()
     {
         // 验证数据
         if (!ValidateData())
@@ -168,15 +184,16 @@ public class LoadMap : MonoBehaviour
         MapPlane.transform.localScale = new Vector3(mapWidth * unitWidth, 1, mapHeight * unitWidth);
 
         // TODO 不显示逻辑地图障碍物则返回
-        //if (!IsShow)
-        //{
-        //    return null;
-        //}
+        if (!IsShow)
+        {
+            return null;
+        }
 
-        var result = new List<GameObject>();
+        var result = new List<FixtureData>();
         // 验证障碍物, 如果为空则修改为cube
         // 按照map数据构建地图大小
 
+        Vector3 startPosition = MapPlane.transform.position;
         // 创建格子
         for (var row = 0; row < mapData.Length; row++)
         {
@@ -200,9 +217,19 @@ public class LoadMap : MonoBehaviour
                             var newObstacler = CreateObstacler();
                             newObstacler.transform.parent = ObstaclerList == null ? null : ObstaclerList.transform;
                             newObstacler.transform.localScale = new Vector3(unitWidth, unitWidth, unitWidth);
-                            newObstacler.transform.position = Utils.NumToPosition(MapPlane.transform.position, new Vector2(col, row), unitWidth, mapWidth, mapHeight);
+                            newObstacler.transform.position = Utils.NumToPosition(startPosition, new Vector2(col, row), unitWidth, mapWidth, mapHeight);
                             mapStateDic[key] = newObstacler;
-                            result.Add(newObstacler);
+                            var fix = newObstacler.AddComponent<FixtureData>();
+                            fix.MemberData = new VOBase()
+                            {
+                                SpaceSet = 1 * UnitWidth
+                            };
+                            fix.transform.localScale = new Vector3(UnitWidth, UnitWidth, UnitWidth);
+                            fix.transform.position = Utils.NumToPosition(transform.position, new Vector2(col, row), UnitWidth, MapWidth, MapHeight);
+                            fix.X = col * UnitWidth - MapWidth * UnitWidth * 0.5f;
+                            fix.Y = row * UnitWidth - MapHeight * UnitWidth * 0.5f;
+                            fix.Diameter = 1 * UnitWidth;
+                            result.Add(fix);
                         }
                         break;
                     case Utils.Accessibility:

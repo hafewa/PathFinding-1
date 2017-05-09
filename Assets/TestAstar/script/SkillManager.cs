@@ -29,6 +29,12 @@ public class SkillManager
     /// 单例对象
     /// </summary>
     private static SkillManager single = null;
+
+
+    /// <summary>
+    /// 是否暂停功能
+    /// </summary>
+    public static bool isPause { get; private set; }
     
 
     /// <summary>
@@ -43,6 +49,24 @@ public class SkillManager
         }
         CoroutineManage.AutoInstance();
         CoroutineManage.Single.StartCoroutine(LoopDoFormula(formula));
+    }
+
+    /// <summary>
+    /// 暂停功能
+    /// </summary>
+    public void Pause()
+    {
+        // 暂停功能
+        isPause = true;
+    }
+
+    /// <summary>
+    /// 继续
+    /// </summary>
+    public void Start()
+    {
+        // 继续功能
+        isPause = false;
     }
 
     /// <summary>

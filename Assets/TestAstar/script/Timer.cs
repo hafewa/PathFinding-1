@@ -11,6 +11,48 @@ namespace Util
     public class Timer
     {
 
+        // ---------------------------公有属性-----------------------------
+        /// <summary>
+        /// 是否循环执行
+        /// </summary>
+        public bool IsLoop { get; private set; }
+
+        /// <summary>
+        /// 执行循环时间
+        /// </summary>
+        public float LoopTime { get; private set; }
+
+
+        /// <summary>
+        /// 时间到执行
+        /// </summary>
+        public Action TimesUpDo
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// 是否
+        /// </summary>
+        public bool IsStop { get; private set; }
+
+        /// <summary>
+        /// 停止时间
+        /// </summary>
+        public double StopTime
+        {
+            get { return stopTime; }
+        }
+
+
+        // ----------------------------私有属性--------------------------------
+
+        /// <summary>
+        /// 停止时间
+        /// </summary>
+        private double stopTime = 0;
+
 
         // -------------------------公有方法----------------------------
 
@@ -18,9 +60,12 @@ namespace Util
         /// 初始化
         /// </summary>
         /// <param name="liveTime">存活时间(单位 秒)</param>
-        public Timer(float liveTime)
+        /// <param name="isLoop">是否循环执行, 如果为true则每隔"存活时间"执行一次直至Kill掉(可能内存泄漏), 否则只执行一次</param>
+        public Timer(float liveTime, bool isLoop = false)
         {
             stopTime = TimerManager.Single.StartTimerTick + liveTime;
+            LoopTime = liveTime;
+            IsLoop = isLoop;
         }
 
 
@@ -50,39 +95,16 @@ namespace Util
             IsStop = true;
         }
 
-
-        // ---------------------------公有属性-----------------------------
-
         /// <summary>
-        /// 时间到执行
+        /// 时间移至下一次
         /// </summary>
-        public Action TimesUpDo
+        public void NextTick()
         {
-            get; set;
+            if (IsLoop)
+            {
+                stopTime = TimerManager.Single.StartTimerTick + LoopTime;
+            }
         }
-
-        /// <summary>
-        /// 是否
-        /// </summary>
-        public bool IsStop { get; private set; }
-
-        /// <summary>
-        /// 停止时间
-        /// </summary>
-        public double StopTime
-        {
-            get { return stopTime; }
-        }
-
-
-        // ----------------------------私有属性--------------------------------
-    
-        /// <summary>
-        /// 停止时间
-        /// </summary>
-        private double stopTime = 0;
-
-        
 
     }
 
@@ -220,6 +242,12 @@ namespace Util
                 if (timer.TimesUpDo != null && !timer.IsStop)
                 {
                     timer.TimesUpDo();
+                    // 如果是循环执行则将其移至下一次执行
+                    if (timer.IsLoop)
+                    {
+                        timer.NextTick();
+                        AddTimer(timer);
+                    }
                 }
             }
             timerList = null;

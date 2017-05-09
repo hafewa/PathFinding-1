@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
 using MonoEX;
+using UnityEngine;
 
 /// <summary>
 /// 四叉树
@@ -11,7 +12,7 @@ using MonoEX;
 /// 提高碰撞检测效率
 /// </summary>
 /// <typeparam name="T">数据类型</typeparam>
-public class QuadTree<T> where T : IGraphical<Rectangle>
+public class QuadTree<T> where T : IGraphicsHolder//IGraphical<Rectangle>
 {
     
 
@@ -39,7 +40,7 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     /// <summary>
     /// 当前四叉树节点编辑
     /// </summary>
-    private Rectangle rect;
+    private RectGraphics rect;
 
     /// <summary>
     /// 子树节点列表
@@ -54,7 +55,7 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     /// <summary>
     /// 矩形缓存
     /// </summary>
-    private Queue<Rectangle> rectCache = null; 
+    private Queue<ICollisionGraphics> rectCache = null; 
 
     /// <summary>
     /// 初始化四叉树
@@ -62,14 +63,14 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     /// <param name="level">当前四叉树所在位置</param>
     /// <param name="rect">当前四叉树的位置与宽度大小</param>
     /// <param name="parentQueue">父级引用cache</param>
-    public QuadTree(int level, Rectangle rect, Queue<QuadTree<T>> parentNodeCache = null, Queue<Rectangle> parentRectCache = null)
+    public QuadTree(int level, RectGraphics rect, Queue<QuadTree<T>> parentNodeCache = null, Queue<ICollisionGraphics> parentRectCache = null)
     {
         this.level = level;
         itemsList = new List<T>();
         this.rect = rect;
         nodes = new QuadTree<T>[4];
         nodeCache = parentNodeCache ?? new Queue<QuadTree<T>>();
-        rectCache = parentRectCache ?? new Queue<Rectangle>();
+        rectCache = parentRectCache ?? new Queue<ICollisionGraphics>();
     }
 
 
@@ -78,18 +79,18 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     /// </summary>
     /// <param name="item">对象</param>
     /// <returns>节点编号</returns>
-    public int GetIndex(Rectangle item)
+    public int GetIndex(ICollisionGraphics item)
     {
         var result = -1;
         // 获得当前节点rect的中心点
-        var midPointX = this.rect.X + this.rect.Width/2;
-        var midPointY = this.rect.Y + this.rect.Height/2;
+        var midPointX = this.rect.Postion.x;// + this.rect.Width/2;
+        var midPointY = this.rect.Postion.y;// + this.rect.Height/2;
         
         // 0点在左下角
-        var topContians = (item.Y > midPointY); 
-        var bottomContians = (item.Y < midPointY - item.Height);
+        var topContians = (item.Postion.y > midPointY); 
+        var bottomContians = (item.Postion.y < midPointY);
 
-        if (item.X < midPointX - item.Width)
+        if (item.Postion.x < midPointX)
         {
             if (topContians)
             {
@@ -102,7 +103,7 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
                 result = 2;
             }
         }
-        else if (item.X > midPointX)
+        else if (item.Postion.x > midPointX)
         {
             if (topContians)
             {
@@ -114,11 +115,6 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
                 // 右下角
                 result = 1;
             }
-        }
-        else
-        {
-            // TODO
-            int i = 0;
         }
 
         return result;
@@ -180,7 +176,7 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     /// </summary>
     /// <param name="rectangle">碰撞对象</param>
     /// <returns>可能碰撞的列表, 对量性质: 在传入rect所在的最底层自己点的对量+其上各个父级的边缘节点</returns>
-    public IList<T> Retrieve(Rectangle rectangle)
+    public IList<T> Retrieve(RectGraphics rectangle)
     {
         var result = new List<T>();
 
@@ -203,11 +199,11 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     /// </summary>
     /// <param name="scopeRect">范围rect</param>
     /// <returns></returns>
-    public IList<T> GetScope(Rectangle scopeRect)
+    public IList<T> GetScope(ICollisionGraphics scopeRect)
     {
         List<T> result = null;
         // 判断与当前四叉树的相交
-        if (scopeRect != null && rect.IsCollision(scopeRect))
+        if (scopeRect != null && rect.CheckCollision(scopeRect))
         {
             result = new List<T>();
             T tmpItem;
@@ -215,7 +211,7 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
             for (var i = 0; i < itemsList.Count; i++)
             {
                 tmpItem = itemsList[i];
-                if (tmpItem.GetGraphical().IsCollision(scopeRect))
+                if (tmpItem.MyCollisionGraphics.CheckCollision(scopeRect))
                 {
                     result.Add(tmpItem);
                 }
@@ -224,7 +220,7 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
             {
                 for (int i = 0; i < nodes.Length; i++)
                 {
-                    if (nodes[i].rect.IsCollision(scopeRect))
+                    if (nodes[i].rect.CheckCollision(scopeRect))
                     {
                         result.AddRange(nodes[i].GetScope(scopeRect));
                     }
@@ -247,7 +243,7 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     /// 获取当前四叉树的矩形区域
     /// </summary>
     /// <returns></returns>
-    public Rectangle GetRectangle()
+    public RectGraphics GetRectangle()
     {
         return rect;
     }
@@ -305,7 +301,7 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     private void Split()
     {
         QuadTree<T> node = null;
-        Rectangle subRect = null;
+        RectGraphics subRect = null;
         int subLevel = level + 1;
         for (var i = 0; i < 4; i++)
         {
@@ -334,7 +330,7 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     private bool InsertToSubNode(T item, QuadTree<T>[] subNodes)
     {
         var result = false;
-        var index = GetIndex(item.GetGraphical());
+        var index = GetIndex(item.MyCollisionGraphics);
         if (index != -1)
         {
             subNodes[index].Insert(item);
@@ -350,45 +346,47 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     /// <param name="subRectNum">子节点ID</param>
     /// <param name="rectCacheQueue">矩形对象缓存队列</param>
     /// <returns>子节点矩形范围</returns>
-    private static Rectangle GetSplitRectangle(Rectangle parentRect, int subRectNum,
-        Queue<Rectangle> rectCacheQueue = null)
+    private static RectGraphics GetSplitRectangle(RectGraphics parentRect, int subRectNum,
+        Queue<RectGraphics> rectCacheQueue = null)
     {
         // 获得当前四叉树的一半宽度高度
-        var subQuadTreeWidth = parentRect.Width/2;
-        var subQuadTreeHeight = parentRect.Height/2;
+        var subQuadTreeWidth = parentRect.Width * 0.5f;
+        var subQuadTreeHeight = parentRect.Height * 0.5f;
         var subX = 0f;
         var subY = 0f;
-        Rectangle result = null;
+        RectGraphics result = null;
+        var halfWidth = subQuadTreeWidth*0.5f;
+        var halfHeight = subQuadTreeHeight*0.5f;
+        switch (subRectNum)
+        {
+            case 0:
+                subX = parentRect.Postion.x + halfWidth;
+                subY = parentRect.Postion.y + halfHeight;
+                break;
+            case 1:
+                subX = parentRect.Postion.x + halfHeight;
+                subY = parentRect.Postion.y - halfHeight;
+                break;
+            case 2:
+                subX = parentRect.Postion.x - halfHeight;
+                subY = parentRect.Postion.y - halfHeight;
+                break;
+            case 3:
+                subX = parentRect.Postion.x - halfHeight;
+                subY = parentRect.Postion.y + halfHeight;
+                break;
+        }
+
         if (rectCacheQueue != null && rectCacheQueue.Count > 0)
         {
             result = rectCacheQueue.Dequeue();
         }
         else
         {
-            result = new Rectangle();
-        }
-        switch (subRectNum)
-        {
-            case 0:
-                subX = parentRect.X + subQuadTreeWidth;
-                subY = parentRect.Y + subQuadTreeHeight;
-                break;
-            case 1:
-                subX = parentRect.X + subQuadTreeWidth;
-                subY = parentRect.Y;
-                break;
-            case 2:
-                subX = parentRect.X;
-                subY = parentRect.Y;
-                break;
-            case 3:
-                subX = parentRect.X;
-                subY = parentRect.Y + subQuadTreeHeight;
-                break;
+            result = new RectGraphics(new Vector2(subX, subY), subQuadTreeWidth, subQuadTreeHeight, 0);
         }
 
-        result.X = subX;
-        result.Y = subY;
+        // result.Postion = new Vector2(subX, subY);
         result.Width = subQuadTreeWidth;
         result.Height = subQuadTreeHeight;
 
@@ -396,91 +394,91 @@ public class QuadTree<T> where T : IGraphical<Rectangle>
     }
 }
 
-/// <summary>
-/// 矩形类
-/// </summary>
-public class Rectangle : GraphicalItem<Rectangle>
-{
+///// <summary>
+///// 矩形类
+///// </summary>
+//public class Rectangle : GraphicalItem<Rectangle>
+//{
 
-    /// <summary>
-    /// 宽度
-    /// </summary>
-    public float Width { get; set; }
+//    /// <summary>
+//    /// 宽度
+//    /// </summary>
+//    public float Width { get; set; }
 
-    /// <summary>
-    /// 高度
-    /// </summary>
-    public float Height { get; set; }
+//    /// <summary>
+//    /// 高度
+//    /// </summary>
+//    public float Height { get; set; }
 
-    public Rectangle()
-    {
+//    public Rectangle()
+//    {
         
-    }
+//    }
 
-    public Rectangle(float x, float y, float w, float h)
-    {
-        X = x;
-        Y = y;
-        Width = w;
-        Height = h;
-    }
+//    public Rectangle(float x, float y, float w, float h)
+//    {
+//        X = x;
+//        Y = y;
+//        Width = w;
+//        Height = h;
+//    }
 
-    /// <summary>
-    /// 检测碰撞
-    /// TODO 优化
-    /// </summary>
-    /// <param name="target">目标</param>
-    /// <returns>是否碰撞</returns>
-    public override bool IsCollision(Rectangle target)
-    {
-        if (target == null || X + Width < target.X || target.X + target.Width < X || Y + Height < target.Y || target.Y + target.Height < Y)
-        {
-            return false;
-        }
-        return true;
-    }
+//    /// <summary>
+//    /// 检测碰撞
+//    /// TODO 优化
+//    /// </summary>
+//    /// <param name="target">目标</param>
+//    /// <returns>是否碰撞</returns>
+//    public override bool IsCollision(Rectangle target)
+//    {
+//        if (target == null || X + Width < target.X || target.X + target.Width < X || Y + Height < target.Y || target.Y + target.Height < Y)
+//        {
+//            return false;
+//        }
+//        return true;
+//    }
 
 
-    public override string ToString()
-    {
-        return string.Format("x:{0}, y:{1}, W:{2}, H:{3}", X, Y, Width, Height);
-    }
+//    public override string ToString()
+//    {
+//        return string.Format("x:{0}, y:{1}, W:{2}, H:{3}", X, Y, Width, Height);
+//    }
 
     
-}
+//}
 
-/// <summary>
-/// 图形接口
-/// 提供图形反馈
-/// </summary>
-/// <typeparam name="T">图形类型</typeparam>
-public interface IGraphical<T> where T : GraphicalItem<T>
-{
-    T GetGraphical();
-}
+///// <summary>
+///// 图形接口
+///// 提供图形反馈
+///// </summary>
+///// <typeparam name="T">图形类型</typeparam>
+//public interface IGraphical<T> where T : GraphicalItem<T>
+//{
+//    T GetGraphical();
+//}
 
 
-/// <summary>
-/// 图形抽象类
-/// </summary>
-/// <typeparam name="T">目标类型也是图形抽象类</typeparam>
-public abstract class GraphicalItem<T> where T : GraphicalItem<T>
-{
+///// <summary>
+///// 图形抽象类
+///// </summary>
+///// <typeparam name="T">目标类型也是图形抽象类</typeparam>
+//public abstract class GraphicalItem<T> where T : GraphicalItem<T>
+//{
 
-    /// <summary>
-    /// 位置X
-    /// </summary>
-    public float X { get; set; }
+//    /// <summary>
+//    /// 位置X
+//    /// </summary>
+//    public float X { get; set; }
 
-    /// <summary>
-    /// 位置Y
-    /// </summary>
-    public float Y { get; set; }
+//    /// <summary>
+//    /// 位置Y
+//    /// </summary>
+//    public float Y { get; set; }
 
-    /// <summary>
-    /// 检测碰撞
-    /// </summary>
-    /// <param name="target">目标对象</param>
-    /// <returns>是否碰撞</returns>
-    public abstract bool IsCollision(T target);
-}
+//    /// <summary>
+//    /// 检测碰撞
+//    /// </summary>
+//    /// <param name="target">目标对象</param>
+//    /// <returns>是否碰撞</returns>
+//    public abstract bool IsCollision(T target);
+//}

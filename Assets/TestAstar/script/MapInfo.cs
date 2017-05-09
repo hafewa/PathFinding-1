@@ -7,7 +7,7 @@ using UnityEngine;
 /// <summary>
 /// 地图信息
 /// </summary>
-public class MapInfo<T> where T : IGraphical<Rectangle>
+public class MapInfo<T> where T : IGraphicsHolder//IGraphical<Rectangle>
 {
 
 
@@ -105,11 +105,11 @@ public class MapInfo<T> where T : IGraphical<Rectangle>
     {
         Node result = null;
 
-        if (t != null)
+        if (t != null && t.MyCollisionGraphics != null)
         {
-            var rect = t.GetGraphical();
+            var graphics = t.MyCollisionGraphics;
             var pos = Utils.PositionToNum(planePosition,
-                    new Vector3(rect.X, 0, rect.Y),
+                    new Vector3(graphics.Postion.x, 0, graphics.Postion.y),
                     unitWidth, mapWidth, mapHeight);
             result = new Node(pos[0], pos[1]);
         }
@@ -132,9 +132,9 @@ public class MapInfo<T> where T : IGraphical<Rectangle>
                 var pos = GetPos(item);
                 if (ValidatePos(pos))
                 {
-                    if (item is SchoolBehaviour) {
+                    if (item is ClusterData) {
                         map[pos.Y][pos.X] = Utils.Member;
-                    }else if (item is FixtureBehaviour) {
+                    }else if (item is FixtureData) {
                         map[pos.Y][pos.X] = Utils.Obstacle;
                     } else {
                         map[pos.Y][pos.X] = Utils.Accessibility;

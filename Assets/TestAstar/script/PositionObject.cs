@@ -7,32 +7,53 @@ using UnityEngine;
 /// <summary>
 /// 位置对象
 /// </summary>
-public abstract class PositionObject : MonoBehaviour, IGraphical<Rectangle>
+public abstract class PositionObject : MonoBehaviour, IBaseMember, IGraphicsHolder//, IGraphical<Rectangle>
 {
+
+    /// <summary>
+    /// 目标筛选数据
+    /// </summary>
+    public VOBase MemberData {
+        get { return memberData; }
+        set
+        {
+            memberData = value;
+            if (memberData != null)
+            {
+                // 初始化数据时初始化图形对象
+                MyCollisionGraphics = new CircleGraphics(new Vector2(x, y), memberData.SpaceSet * 0.5f);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 单位图形
+    /// </summary>
+    public ICollisionGraphics MyCollisionGraphics
+    {
+        get
+        {
+            // TODO 变大变小
+            collisionGraphics.Postion = new Vector2(x, y);
+            return collisionGraphics;
+        }
+        set { collisionGraphics = value; }
+    }
+
+
     /// <summary>
     /// 单位ID
     /// </summary>
     public long Id {
         get
         {
-            if (id == -1)
+            if (id < 0)
             {
                 id = ++staticId;
             }
             return id;
         }
     }
-
-
-    /// <summary>
-    /// 用于标记对象
-    /// </summary>
-    private static long staticId;
-
-    /// <summary>
-    /// 当前单位ID
-    /// </summary>
-    private long id = -1;
 
     /// <summary>
     /// 物理信息
@@ -44,6 +65,7 @@ public abstract class PositionObject : MonoBehaviour, IGraphical<Rectangle>
             if (physicsInfo == null)
             {
                 physicsInfo = new PhysicsInfo();
+                physicsInfo.MaxSpeed = MemberData.MoveSpeed;
             }
             if (physicsInfo.Quality < Utils.ApproachZero)
             {
@@ -59,12 +81,14 @@ public abstract class PositionObject : MonoBehaviour, IGraphical<Rectangle>
     /// </summary>
     public float Diameter
     {
-        get { return diameter; }
+        get { return MemberData.SpaceSet; }
         set
         {
-            diameter = value < 0 ? 1 : value;
+            MemberData.SpaceSet = value < 0 ? 1 : value;
+            // 更新图形空间值
+            CollisionGraphics.SetGraphicsSpaceSet(MyCollisionGraphics, value);
             // 质量 = 直径平方
-            physicsInfo.Quality = diameter * diameter;
+            physicsInfo.Quality = MemberData.SpaceSet * MemberData.SpaceSet;
         }
     }
 
@@ -76,8 +100,47 @@ public abstract class PositionObject : MonoBehaviour, IGraphical<Rectangle>
     public Vector3 Position
     {
         get { return this.transform.position; }
-        set { this.transform.position = value; }
+        set
+        {
+            this.transform.position = value;
+            // 更新memberData中的数据
+            x = this.transform.position.x;
+            y = this.transform.position.z;
+        }
     }
+
+    /// <summary>
+    /// 当前位置X
+    /// </summary>
+    public float X
+    {
+        get { return x; }
+        set
+        {
+            x = value;
+            //if (CollisionGraphics != null)
+            //{
+            //    CollisionGraphics.Postion = new Vector2(x, y);
+            //}
+        }
+    }
+
+    /// <summary>
+    /// 当前位置Y
+    /// </summary>
+    public float Y
+    {
+        get { return y; }
+        set
+        {
+            y = value;
+            //if (CollisionGraphics != null)
+            //{
+            //    CollisionGraphics.Postion = new Vector2(x, y);
+            //}
+        }
+    }
+
 
     /// <summary>
     /// 设置旋转值
@@ -93,6 +156,7 @@ public abstract class PositionObject : MonoBehaviour, IGraphical<Rectangle>
     public Vector3 Direction
     {
         get { return this.transform.forward; }
+        set { this.transform.forward = value; }
     }
 
     public Vector3 DirectionRight
@@ -110,78 +174,140 @@ public abstract class PositionObject : MonoBehaviour, IGraphical<Rectangle>
 
     /// <summary>
     /// 当前对象是否可以移动
+    /// 子类如果不可移动则重构该属性
     /// </summary>
     public virtual bool CouldMove
     {
         get { return true; }
     }
-    
+
+    /// <summary>
+    /// 是否在移动
+    /// </summary>
+    public bool IsMoving
+    {
+        get { return isMoving; }
+    }
+
 
     /// <summary>
     /// 物理信息
     /// </summary>
     protected PhysicsInfo physicsInfo = new PhysicsInfo();
 
-    /// <summary>
-    /// 单元直径
-    /// </summary>
-    private float diameter = 1;
+
 
     /// <summary>
-    /// 历史x
+    /// 单位数据对象
     /// </summary>
-    private float hisX;
+    private VOBase memberData = null;
 
     /// <summary>
-    /// 历史y
+    /// 图形对象
     /// </summary>
-    private float hisY;
+    private ICollisionGraphics collisionGraphics = null;
 
     /// <summary>
-    /// 历史直径
+    /// 用于标记对象
     /// </summary>
-    private float hisDiameter;
+    private static long staticId;
 
     /// <summary>
-    /// 历史rect
+    /// 当前单位ID
     /// </summary>
-    private Rectangle hisRectangle;
+    private long id = -1;
+
+    /// <summary>
+    /// 当前位置x
+    /// </summary>
+    private float x = 0f;
+
+    /// <summary>
+    /// 当前位置y
+    /// </summary>
+    private float y = 0f;
+
+    ///// <summary>
+    ///// 单元直径
+    ///// </summary>
+    //private float diameter = 1;
+
+    ///// <summary>
+    ///// 历史x
+    ///// </summary>
+    //private float hisX;
+
+    ///// <summary>
+    ///// 历史y
+    ///// </summary>
+    //private float hisY;
+
+    ///// <summary>
+    ///// 历史直径
+    ///// </summary>
+    //private float hisDiameter;
+
+    ///// <summary>
+    ///// 历史rect
+    ///// </summary>
+    //private Rectangle hisRectangle;
+
+    /// <summary>
+    /// 是否正在移动
+    /// </summary>
+    private bool isMoving = true;
+
+    /// <summary>
+    /// 停止移动
+    /// </summary>
+    public void Stop()
+    {
+        isMoving = false;
+    }
+
+    /// <summary>
+    /// 继续移动
+    /// </summary>
+    public void ContinueMove()
+    {
+        isMoving = true;
+    }
 
     /// <summary>
     /// 返回位置图形
     /// </summary>
     /// <returns>方形图形</returns>
-    public Rectangle GetGraphical()
-    {
-        //值有变更时重新创建Rect
-        var halfDiameter = Diameter * 0.5f;
-        var x = transform.position.x - halfDiameter;
-        var y = transform.position.z - halfDiameter;
-        if (hisDiameter - diameter > Utils.ApproachZero ||
-            diameter - hisDiameter > Utils.ApproachZero ||
-            hisX - x > Utils.ApproachZero ||
-            x - hisX > Utils.ApproachZero ||
-            hisY - y > Utils.ApproachZero ||
-            y - hisY > Utils.ApproachZero)
-        {
-            hisX = x;
-            hisY = y;
-            hisDiameter = diameter;
-            if (hisRectangle == null)
-            {
-                //Debug.Log("1");
-                hisRectangle = new Rectangle(x, y, diameter, diameter);
-            }
-            else
-            {
-                hisRectangle.X = x;
-                hisRectangle.Y = y;
-                hisRectangle.Width = diameter;
-                hisRectangle.Height = diameter;
-            }
-        }
-        return hisRectangle;
-    }
+    //public Rectangle GetGraphical()
+    //{
+    //    //值有变更时重新创建Rect
+    //    var halfDiameter = Diameter * 0.5f;
+    //    var x = transform.position.x - halfDiameter;
+    //    var y = transform.position.z - halfDiameter;
+    //    if (hisDiameter - diameter > Utils.ApproachZero ||
+    //        diameter - hisDiameter > Utils.ApproachZero ||
+    //        hisX - x > Utils.ApproachZero ||
+    //        x - hisX > Utils.ApproachZero ||
+    //        hisY - y > Utils.ApproachZero ||
+    //        y - hisY > Utils.ApproachZero)
+    //    {
+    //        hisX = x;
+    //        hisY = y;
+    //        hisDiameter = diameter;
+    //        if (hisRectangle == null)
+    //        {
+    //            //Debug.Log("1");
+    //            hisRectangle = new Rectangle(x, y, diameter, diameter);
+    //        }
+    //        else
+    //        {
+    //            hisRectangle.X = x;
+    //            hisRectangle.Y = y;
+    //            hisRectangle.Width = diameter;
+    //            hisRectangle.Height = diameter;
+    //        }
+    //    }
+    //    return hisRectangle;
+    //}
 }
 
 
@@ -284,4 +410,17 @@ public class PhysicsInfo
     /// 最大速度
     /// </summary>
     private float maxSpeed = 10;
+}
+
+
+/// <summary>
+/// 图形持有者
+/// </summary>
+public interface IGraphicsHolder
+{
+
+    /// <summary>
+    /// 单位图形
+    /// </summary>
+    ICollisionGraphics MyCollisionGraphics { get; set; }
 }

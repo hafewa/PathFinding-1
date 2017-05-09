@@ -4,7 +4,7 @@
 /// <summary>
 /// 点对点飞行特效行为构建器
 /// </summary>
-public class PointToPointFormulaItem : IFormulaItem
+public class PointToPointFormulaItem : IFormulaItem 
 {
     /// <summary>
     /// 行为类型

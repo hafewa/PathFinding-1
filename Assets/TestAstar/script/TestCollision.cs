@@ -44,7 +44,7 @@ public class TestCollision : MonoBehaviour
     public IList<bool> IsCollisionList = new List<bool>();
 
 
-    public float Angle = 10;
+    // public float Angle = 10;
 
 
 	void Start ()

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
+using Random = System.Random;
 
 
 /// <summary>
@@ -56,6 +57,55 @@ public class Utils
     /// </summary>
     public const int Opened = -1;
 
+
+    // --------------------------单位类型----------------------------
+    /// <summary>
+    /// 单位类型-士兵
+    /// </summary>
+    public const short MemberItemTypeSoldier = 1;
+
+    /// <summary>
+    /// 单位类型-重型载具(坦克)
+    /// </summary>
+    public const short MemberItemTypeTank = 2;
+
+    /// <summary>
+    /// 单位类型-轻型载具
+    /// </summary>
+    public const short MemberItemTypeLV = 3;
+
+    /// <summary>
+    /// 单位类型-火炮
+    /// </summary>
+    public const short MemberItemTypeCannon = 4;
+
+    /// <summary>
+    /// 单位类型-飞行器
+    /// </summary>
+    public const short MemberItemTypeAircraft = 5;
+
+    // ----------------------------单位类型--------------------------
+
+    // ----------------------------单位大类型-----------------------------
+
+    /// <summary>
+    /// 单位大类型-地面单位
+    /// </summary>
+    public const short GeneralTypeSurface = 1;
+
+    /// <summary>
+    /// 单位大类型-空中单位
+    /// </summary>
+    public const short GeneralTypeAir = 2;
+
+    /// <summary>
+    /// 单位大类型-建筑
+    /// </summary>
+    public const short GeneralTypeBuilding = 3;
+
+    // ----------------------------单位大类型-----------------------------
+
+
     /// <summary>
     /// 弧度转角度常数
     /// </summary>
@@ -69,7 +119,7 @@ public class Utils
     /// <summary>
     /// 弧度转角度常数
     /// </summary>
-    public static readonly float HalfPI = (float)Math.PI / 2;
+    public static readonly float HalfPI = (float)Math.PI * 0.5f;
 
     /// <summary>
     /// 未计算标记
@@ -126,8 +176,8 @@ public class Utils
     /// <returns>map中的行列位置 0位x 1位y</returns>
     public static int[] PositionToNum(Vector3 planePosOffset, Vector3 position, float unitWidth, float mapWidth, float mapHight)
     {
-        var x = (int)((position.x - planePosOffset.x + mapWidth * unitWidth / 2) / unitWidth);
-        var y = (int)((position.z - planePosOffset.z + mapHight * unitWidth / 2) / unitWidth);
+        var x = (int)((position.x - planePosOffset.x + mapWidth * unitWidth * 0.5f) / unitWidth);
+        var y = (int)((position.z - planePosOffset.z + mapHight * unitWidth * 0.5f) / unitWidth);
         if (x < 0)
         {
             x = 0;
@@ -160,9 +210,13 @@ public class Utils
     public static Vector3 NumToPosition(Vector3 planePosOffset, Vector2 num, float unitWidth, float mapWidth, float mapHight)
     {
         var result = new Vector3(
-            planePosOffset.x - mapWidth * unitWidth / 2 + unitWidth / 2f + num.x * unitWidth,
+            planePosOffset.x - mapWidth * unitWidth * 0.5f
+            //+ unitWidth * 0.5f 
+            + num.x * unitWidth,
             planePosOffset.y + unitWidth,
-            planePosOffset.z - mapHight * unitWidth / 2 + unitWidth / 2f + num.y * unitWidth);
+            planePosOffset.z - mapHight * unitWidth * 0.5f
+            //+ unitWidth * 0.5f
+            + num.y * unitWidth);
 
         return result;
     }
@@ -221,17 +275,53 @@ public class Utils
     }
 
     /// <summary>
-    /// 回执矩形
+    /// 绘制图形
     /// </summary>
-    /// <param name="rectangle"></param>
-    /// <param name="color"></param>
-    public static void DrawRect(Rectangle rectangle, Color color)
+    /// <param name="graphics">图形对象</param>
+    public static void DrawGraphics(ICollisionGraphics graphics, Color color)
     {
-        Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
-        Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
-        Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
-        Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
+        if (graphics == null)
+        {
+            return;
+        }
+        switch (graphics.GraphicType)
+        {
+            case GraphicType.Circle:
+                var circle = graphics as CircleGraphics;
+                if (circle != null)
+                {
+                    DrawCircle(new Vector3(circle.Postion.x, 0, circle.Postion.y), circle.Radius, color);
+                }
+                break;
+            case GraphicType.Rect:
+                var rect = graphics as RectGraphics;
+                if (rect != null)
+                {
+                    DrawRect(new Vector3(rect.Postion.x, 0, rect.Postion.y), rect.Width, rect.Height, rect.Rotation, color);
+                }
+                break;
+            case GraphicType.Sector:
+                var sector = graphics as SectorGraphics;
+                if (sector != null)
+                {
+                    DrawSector(new Vector3(sector.Postion.x, 0, sector.Postion.y), sector.Radius, sector.Rotation, sector.OpenAngle, color);
+                }
+                break;
+        }
     }
+
+    ///// <summary>
+    ///// 回执矩形
+    ///// </summary>
+    ///// <param name="rectangle"></param>
+    ///// <param name="color"></param>
+    //public static void DrawRect(Rectangle rectangle, Color color)
+    //{
+    //    Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
+    //    Debug.DrawLine(new Vector3(rectangle.X, 0, rectangle.Y), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
+    //    Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X, 0, rectangle.Y + rectangle.Height), color);
+    //    Debug.DrawLine(new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y + rectangle.Height), new Vector3(rectangle.X + rectangle.Width, 0, rectangle.Y), color);
+    //}
 
     /// <summary>
     /// 回执矩形
@@ -304,6 +394,7 @@ public class Utils
         Vector3 firstPoint = Vector3.zero;
         for (float theta = 0; theta < 2 * Mathf.PI; theta += 0.1f)
         {
+            
             float x = radius * Mathf.Cos(theta);
             float z = radius * Mathf.Sin(theta);
             Vector3 endPoint = position + new Vector3(x, 0, z);
@@ -321,7 +412,7 @@ public class Utils
         // 绘制最后一条线段
         Debug.DrawLine(firstPoint, beginPoint, color);
 
-        Debug.DrawLine(firstPoint, firstPoint + new Vector3(radius, 0, 0), color);
+        //Debug.DrawLine(firstPoint, firstPoint + new Vector3(radius, 0, 0), color);
     }
 
     /// <summary>

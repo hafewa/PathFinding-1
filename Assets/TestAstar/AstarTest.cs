@@ -85,7 +85,7 @@ public class AstarTest : MonoBehaviour {
     /// <summary>
     /// 集群引用
     /// </summary>
-    public SchoolManager schoolManager;
+    //public ClusterManager clusterManager;
     
 
 
@@ -108,6 +108,16 @@ public class AstarTest : MonoBehaviour {
     /// 上次目标点Y
     /// </summary>
     private int lastTimeTargetY = 0;
+
+    /// <summary>
+    /// 搜寻单位
+    /// </summary>
+    private ClusterData scaner = null;
+
+    /// <summary>
+    /// 集群单位列表
+    /// </summary>
+    private IList<PositionObject> itemList = new List<PositionObject>(); 
     
 
     void Start () {
@@ -116,7 +126,7 @@ public class AstarTest : MonoBehaviour {
         Application.targetFrameRate = 60;
         mainCamera = GameObject.Find("Main Camera").GetComponent<Camera>();
         var loadMapPos = LoadMap.GetLeftBottom();
-        schoolManager.Init(loadMapPos.x, loadMapPos.z, MapWidth, MapHeight, UnitWidth, null);
+        ClusterManager.Single.Init(loadMapPos.x + LoadMap.MapWidth * LoadMap.UnitWidth, loadMapPos.z + LoadMap.MapHeight * LoadMap.UnitWidth, MapWidth, MapHeight, UnitWidth, null);
         InitMapInfo();
     }
     
@@ -124,6 +134,22 @@ public class AstarTest : MonoBehaviour {
     {
         // 控制
         Control();
+        Scan();
+    }
+
+
+    private void Scan()
+    {
+        if (scaner != null)
+        {
+            var resultList = TargetSelecter.GetCollisionItemList(itemList, scaner.X, scaner.Y, scaner.MemberData.AttackRange*0.5f);
+            Utils.DrawCircle(new Vector3(scaner.X, 0, scaner.Y), scaner.MemberData.AttackRange * 0.5f, Color.white);
+            for (var i = 0; i < resultList.Count; i++)
+            {
+                var item = resultList[i];
+                Utils.DrawCircle(new Vector3(item.X, 0, item.Y), item.MemberData.SpaceSet * 0.5f, Color.white);
+            }
+        }
     }
     
     /// <summary>
@@ -160,7 +186,7 @@ public class AstarTest : MonoBehaviour {
                 StartCoroutine(Step(path));
                 
                 var loadMapPos = LoadMap.GetLeftBottom();
-                schoolManager.Init(loadMapPos.x, loadMapPos.z, MapWidth, MapHeight, UnitWidth, mapInfoData);
+                ClusterManager.Single.Init(loadMapPos.x + LoadMap.MapWidth * LoadMap.UnitWidth * 0.5f, loadMapPos.z + LoadMap.MapHeight * LoadMap.UnitWidth * 0.5f, MapWidth, MapHeight, UnitWidth, mapInfoData);
                 StartMoving(path, mapInfoData, lastTimeTargetX, lastTimeTargetY);
 
                 // 缓存上次目标点
@@ -199,12 +225,12 @@ public class AstarTest : MonoBehaviour {
         if (Input.GetKey(KeyCode.P))
         {
             // 暂停
-            schoolManager.Pause();
+            ClusterManager.Single.Pause();
         }
         if (Input.GetKey(KeyCode.G))
         {
             // 继续
-            schoolManager.GoOn();
+            ClusterManager.Single.GoOn();
         }
     }
 
@@ -217,7 +243,7 @@ public class AstarTest : MonoBehaviour {
         var mapInfoStr = Utils.LoadFileInfo(mapInfoPath);
         var mapInfoData = DeCodeInfo(mapInfoStr);
         LoadMap.Init(mapInfoData, UnitWidth);
-        schoolManager.Init(-MapWidth / 2, -MapHeight / 2, MapWidth, MapHeight, 10, mapInfoData);
+        ClusterManager.Single.Init(-MapWidth / 2, -MapHeight / 2, MapWidth, MapHeight, 10, mapInfoData);
         MapWidth = mapInfoData[0].Length;
         MapHeight = mapInfoData.Length;
         return mapInfoData;
@@ -332,35 +358,69 @@ public class AstarTest : MonoBehaviour {
         {
             return;
         }
+        foreach (var item in itemList)
+        {
+            Destroy(item);
+        }
+        itemList.Clear();
         // 清除所有组
-        schoolManager.ClearAll();
+        ClusterManager.Single.ClearAll();
         GameObject schoolItem = null;
-        SchoolBehaviour school = null;
+        ClusterData school = null;
         var cloneList = new List<Node>(pathList);
         var target = Utils.NumToPosition(LoadMap.transform.position, new Vector2(cloneList[cloneList.Count - 1].X, cloneList[cloneList.Count - 1].Y), UnitWidth, MapWidth, MapHeight);
         var start = Utils.NumToPosition(LoadMap.transform.position, new Vector2(startX, startY), UnitWidth, MapWidth, MapHeight);
         for (int i = 0; i < ItemCount; i++)
         {
             schoolItem = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            school = schoolItem.AddComponent<SchoolBehaviour>();
-            school.GroupId = i > 10 ? 2 : 1;
+            school = schoolItem.AddComponent<ClusterData>();
+            school.MemberData = new VOBase()
+            {
+                AttackRange = 20,
+                SpaceSet = 3
+            };
+            school.GroupId = 1;
+            // TODO 物理信息中一部分来自于数据
             school.PhysicsInfo.MaxSpeed = 10;
             school.RotateSpeed = 1;
             school.RotateWeight = 1;
             school.transform.localPosition = new Vector3((i % 3) * 2 + start.x, start.y, i / 3 * 2 + start.z);
             school.name = "item" + i;
             school.TargetPos = target;
-            school.Diameter = (i == 0 ? 5 : 2) * UnitWidth;
+            school.Diameter = 10;
             //school.Moveing = (a) => { Debug.Log(a.name + "Moving"); };
 
             //school.Wait = (a) => { Debug.Log(a.name + "Wait"); };
             //school.Complete = (a) => { Debug.Log(a.name + "Complete"); };
+            itemList.Add(school);
+            ClusterManager.Single.Add(school);
 
-            schoolManager.Add(school);
+
+            Action<ClusterGroup> lam = (thisGroup) =>
+            {
+                // Debug.Log("GroupComplete:" + thisGroup.Target);
+                // 数据本地化
+                // 数据结束
+                if (cloneList.Count == 0)
+                {
+                    return;
+                }
+                cloneList.RemoveAt(cloneList.Count - 1);
+                if (cloneList.Count == 0)
+                {
+                    return;
+                }
+                var node = cloneList[cloneList.Count - 1];
+                thisGroup.Target = Utils.NumToPosition(LoadMap.transform.position, new Vector2(node.X, node.Y), UnitWidth, MapWidth, MapHeight);
+            };
+            school.Group.ProportionOfComplete = 1;
+            school.Group.Complete = lam;
         }
+        // 设置搜寻单位
+        scaner = school;
 
         GameObject fixItem = null;
-        FixtureBehaviour fix = null;
+        FixtureData fix = null;
 
         // 遍历地图将障碍物加入列表
         for (var i = 0; i < map.Length; i++)
@@ -373,11 +433,18 @@ public class AstarTest : MonoBehaviour {
                     case Utils.Obstacle:
                         fixItem = GameObject.CreatePrimitive(PrimitiveType.Cube);
                         fixItem.name += i;
-                        fix = fixItem.AddComponent<FixtureBehaviour>();
+                        fix = fixItem.AddComponent<FixtureData>();
+                        fix.MemberData = new VOBase()
+                        {
+                            SpaceSet = 1 * UnitWidth
+                        };
                         fix.transform.localScale = new Vector3(UnitWidth, UnitWidth, UnitWidth);
                         fix.transform.position = Utils.NumToPosition(transform.position, new Vector2(j, i), UnitWidth, MapWidth, MapHeight);
+                        fix.X = j * UnitWidth - MapWidth * UnitWidth * 0.5f;
+                        fix.Y = i * UnitWidth - MapHeight * UnitWidth * 0.5f;
                         fix.Diameter = 1*UnitWidth;
-                        schoolManager.Add(fix);
+                        itemList.Add(fix);
+                        ClusterManager.Single.Add(fix);
                         break;
                 }
             }
@@ -386,7 +453,7 @@ public class AstarTest : MonoBehaviour {
         //school.Group.Target = Utils.NumToPosition(LoadMap.transform.position, new Vector2(cloneList[cloneList.Count - 1].X, cloneList[cloneList.Count - 1].Y), UnitWidth, MapWidth, MapHeight); 
         
 
-        Action<SchoolGroup> lambdaComplete = (thisGroup) =>
+        Action<ClusterGroup> lambdaComplete = (thisGroup) =>
         {
             // Debug.Log("GroupComplete:" + thisGroup.Target);
             // 数据本地化

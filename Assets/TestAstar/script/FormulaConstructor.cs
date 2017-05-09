@@ -106,6 +106,10 @@ public class FormulaConstructor
                         args = args.Replace(" ", "");
                         // 使用参数+名称获取IFormula
                         var item = GetFormula(type, args);
+                        // formula加入暂停item
+                        var pauseItem = GetFormula("Pause", "");
+                        skillInfo.AddFormulaItem(pauseItem);
+
                         skillInfo.AddFormulaItem(item);
                     }
                 }
@@ -255,6 +259,13 @@ public class FormulaConstructor
                     {
                         // TODO 伤害/治疗结算
 
+                    }
+                    break;
+
+                case "Pause":
+                    // 暂停
+                    {
+                        result = new PauseFormulaItem();
                     }
                     break;
                 default:

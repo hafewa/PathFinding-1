@@ -243,7 +243,7 @@ public class BallisticArriveTargetForPosition : BallisticArriveTarget
         {
             // 判断位置+半径是否到达目标
             var nowDir = (TargetPosition - ball.Position);
-            if (nowDir.magnitude <= ball.Radius || Vector3.Angle(nowDir, ball.Direction) > 10)
+            if (nowDir.magnitude <= ball.Radius)
             {
                 result = true;
             }
@@ -266,6 +266,11 @@ public class BallisticArriveTargetForObj : BallisticArriveTarget
     public GameObject TargetObj { get; set; }
 
     /// <summary>
+    /// 最后一次位置
+    /// </summary>
+    public Vector3 LasttimePos;
+
+    /// <summary>
     /// 初始化目标对象
     /// </summary>
     /// <param name="targetObj"></param>
@@ -285,9 +290,20 @@ public class BallisticArriveTargetForObj : BallisticArriveTarget
         if (ball != null && TargetObj != null)
         {
             // 判断位置+半径是否到达目标
-            if ((ball.Position - TargetObj.transform.position).magnitude <= ball.Radius)
+            if (TargetObj != null)
             {
-                result = true;
+                if ((ball.Position - TargetObj.transform.position).magnitude <= ball.Radius)
+                {
+                    LasttimePos = TargetObj.transform.position;
+                    result = true;
+                }
+            }
+            else
+            {
+                if ((ball.Position - LasttimePos).magnitude <= ball.Radius)
+                {
+                    result = true;
+                }
             }
         }
 
@@ -573,13 +589,22 @@ public class TrajectoryAlgorithm
 
         if (ball != null && ballisticTarget != null)
         {
+
             if (ballisticTarget is BallisticArriveTargetForFreeFly)
             {
                 result = ball.Direction.normalized*((BallisticArriveTargetForFreeFly)ballisticTarget).FreeFlyMaxLength;
             }
             else if (ballisticTarget is BallisticArriveTargetForObj)
             {
-                result = ((BallisticArriveTargetForObj) ballisticTarget).TargetObj.transform.position;
+                var objTarget = ballisticTarget as BallisticArriveTargetForObj;
+                if (objTarget.TargetObj != null)
+                {
+                    result = objTarget.TargetObj.transform.position;
+                }
+                else
+                {
+                    result = objTarget.LasttimePos;
+                }
             }
             else if (ballisticTarget is BallisticArriveTargetForPosition)
             {
@@ -588,6 +613,31 @@ public class TrajectoryAlgorithm
         }
 
         return result;
+    }
+}
+
+
+public class BallisticMoveCollection : ILoopItem
+{
+    /// <summary>
+    /// 弹道运行列表
+    /// </summary>
+    private IList<Ballistic> ballisticList= new List<Ballistic>(); 
+
+
+    public void Do()
+    {
+        //BallisticMoveCollection
+    }
+
+    public bool IsEnd()
+    {
+        return false;
+    }
+
+    public void OnDestroy()
+    {
+        throw new NotImplementedException();
     }
 }
 

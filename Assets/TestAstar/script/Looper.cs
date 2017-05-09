@@ -11,7 +11,14 @@ public class Looper : MonoBehaviour
 {
     public static Looper Single
     {
-        get { return single; }
+        get
+        {
+            if (single == null)
+            {
+                AutoInstance();
+            }
+            return single;
+        }
     }
 
     private static Looper single = null;
@@ -33,7 +40,15 @@ public class Looper : MonoBehaviour
 
     void Start()
     {
-        single = this;
+        // 只保留一个
+        if (single != null)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            single = this;
+        }
     }
 
     void Update()

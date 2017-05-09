@@ -20,6 +20,18 @@ public class SDataUtils
 
         switch (index)
         {
+            case "armybase_c":
+                {
+                    SData_armybase_c.AutoInstance();
+                    SData_armybase_c.Single.setData(table1, table2);
+                }
+                break;
+            case "armycardbase_c":
+                {
+                    SData_armycardbase_c.AutoInstance();
+                    SData_armycardbase_c.Single.setData(table1, table2);
+                }
+                break;
             case "soldier":
                 {
                     SData_soldier_data.AutoInstance();
