@@ -38,10 +38,10 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="UnityEngine">
-      <HintPath>C:/Program Files/Unity/Editor/Data/Managed/UnityEngine.dll</HintPath>
+      <HintPath>F:/Program Files/Unity/Editor/Data/Managed/UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEditor">
-      <HintPath>C:/Program Files/Unity/Editor/Data/Managed/UnityEditor.dll</HintPath>
+      <HintPath>F:/Program Files/Unity/Editor/Data/Managed/UnityEditor.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -58,40 +58,21 @@
      <Compile Include="Assets\FishAlgorithm\MoveGroup.cs" />
      <Compile Include="Assets\FishAlgorithm\TankBehaviour.cs" />
      <Compile Include="Assets\FishAlgorithm\TankGroup.cs" />
-     <Compile Include="Assets\PathFinding\CreateSubPathFinding.cs" />
-     <Compile Include="Assets\PathFinding\NewBehaviourScript.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\AStarCallback.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\AStarDiagonalHeuristic.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\AStarLinkNode.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\AStarManhattanHeuristic.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\AStarNode.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\AStarUnit.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\AStarUtils.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\BinaryHeapNode.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\BinaryHeapUtils.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\IAStarHeuristic.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\IAStarUnit.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\NavMash\NavMeshManager.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\NavMash\NavMeshObj.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\NavMash\NavMeshTarget.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\NavMash\OnePerson.cs" />
-     <Compile Include="Assets\PathFinding\Scripts\NavMash\PersonManager.cs" />
-     <Compile Include="Assets\PathFinding\Test\SceneGrid.cs" />
-     <Compile Include="Assets\PathFinding\Test\TestWorld.cs" />
+     <Compile Include="Assets\NeuralNet\Examples\1 - Training On Start\CarMovement1.cs" />
+     <Compile Include="Assets\NeuralNet\Examples\2 - Training On Wall Hit\CarMovement2.cs" />
+     <Compile Include="Assets\NeuralNet\Examples\3 - Save and Load\CarMovement3.cs" />
+     <Compile Include="Assets\NeuralNet\SourceCode\MonoNeuralNet.cs" />
+     <Compile Include="Assets\NeuralNet\SourceCode\MonoNeuralTrainCase.cs" />
+     <Compile Include="Assets\NeuralNet\SourceCode\MonoNeuralTrainer.cs" />
+     <Compile Include="Assets\NeuralNet\SourceCode\NeuralNet.cs" />
+     <Compile Include="Assets\NeuralNet\SourceCode\NeuralNetTrainCase.cs" />
+     <Compile Include="Assets\NeuralNet\SourceCode\NeuralNetTrainer.cs" />
+     <Compile Include="Assets\NeuralNet\SourceCode\Neuron.cs" />
+     <Compile Include="Assets\NeuralNet\SourceCode\NeuronLayer.cs" />
      <Compile Include="Assets\Script\ClickToMove.cs" />
      <Compile Include="Assets\Script\DragonController.cs" />
      <Compile Include="Assets\Script\GameController.cs" />
      <Compile Include="Assets\Script\Maze.cs" />
-     <Compile Include="Assets\TestAstar\script\AStartPathFinding.cs" />
-     <Compile Include="Assets\TestAstar\script\AstarTest.cs" />
-     <Compile Include="Assets\TestAstar\script\BinaryHeap.cs" />
-     <Compile Include="Assets\TestAstar\script\BinaryHeap1.cs" />
-     <Compile Include="Assets\TestAstar\script\BinaryTree.cs" />
-     <Compile Include="Assets\TestAstar\script\LoadMap.cs" />
-     <Compile Include="Assets\TestAstar\script\MapEditor.cs" />
-     <Compile Include="Assets\TestAstar\script\SchoolBehaviour.cs" />
-     <Compile Include="Assets\TestAstar\script\SchoolManager.cs" />
-     <Compile Include="Assets\TestAstar\script\Utils.cs" />
      <Compile Include="Assets\spine-csharp\Animation.cs" />
      <Compile Include="Assets\spine-csharp\AnimationState.cs" />
      <Compile Include="Assets\spine-csharp\AnimationStateData.cs" />
@@ -141,6 +122,7 @@
      <None Include="Assets\Examples\Spine\Eyes\eyes.atlas.txt" />
      <None Include="Assets\spine-unity\Shaders\HiddenPass.shader" />
      <None Include="Assets\SpineData\dragon.atlas.txt" />
+     <None Include="Assets\NeuralNet\Examples\2 - Training On Wall Hit\Readme.txt" />
      <None Include="Assets\SpineData\dragon.json.txt" />
      <None Include="Assets\Examples\Spine\FootSoldier\FS_White.atlas.txt" />
      <None Include="Assets\Examples\Spine\Dragon\license.txt" />
@@ -148,22 +130,36 @@
      <None Include="Assets\Examples\Spine\Raptor\raptor.atlas.txt" />
      <None Include="Assets\Examples\Spine\Spineboy\spineboy.atlas.txt" />
      <None Include="Assets\Examples\Spine\FootSoldier\license.txt" />
+     <None Include="Assets\NeuralNet\Readme.txt" />
      <None Include="Assets\spine-unity\Shaders\Bones.shader" />
      <None Include="Assets\Examples\Spine\Hero\Hero.atlas.txt" />
+     <None Include="Assets\NeuralNet\Examples\1 - Training On Start\Readme.txt" />
+     <None Include="Assets\NeuralNet\Examples\3 - Save and Load\Readme.txt" />
      <None Include="Assets\Examples\Spine\Dragon\dragon.atlas.txt" />
      <None Include="Assets\spine-unity\Shaders\Skeleton.shader" />
      <None Include="Assets\Examples\Spine\Goblins\goblins-mesh.atlas.txt" />
      <None Include="Assets\spine-unity\Shaders\SkeletonLit.shader" />
-     <None Include="Assets\TestAstar\Shader\ClipScroll.shader" />
      <None Include="Assets\Examples\Spine\FootSoldier\Equipment\Equipment.atlas.txt" />
  <Reference Include="UnityEngine.UI">
- <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
+ <HintPath>F:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>
  <Reference Include="UnityEngine.Networking">
- <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/Networking/UnityEngine.Networking.dll</HintPath>
+ <HintPath>F:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/Networking/UnityEngine.Networking.dll</HintPath>
  </Reference>
  <Reference Include="UnityEngine.Analytics">
- <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/UnityAnalytics/UnityEngine.Analytics.dll</HintPath>
+ <HintPath>F:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/UnityAnalytics/UnityEngine.Analytics.dll</HintPath>
+ </Reference>
+ <Reference Include="TongFramework.Math">
+ <HintPath>C:/Users/dell/Documents/PathFinding/Assets/NeuralNet/Binaries/TongFramework.Math.dll</HintPath>
+ </Reference>
+ <Reference Include="TongFramework.Persistence">
+ <HintPath>C:/Users/dell/Documents/PathFinding/Assets/NeuralNet/Binaries/TongFramework.Persistence.dll</HintPath>
+ </Reference>
+ <Reference Include="TongFramework.Unity.Common">
+ <HintPath>C:/Users/dell/Documents/PathFinding/Assets/NeuralNet/Binaries/TongFramework.Unity.Common.dll</HintPath>
+ </Reference>
+ <Reference Include="TongFramework.Unity.Persistence">
+ <HintPath>C:/Users/dell/Documents/PathFinding/Assets/NeuralNet/Binaries/TongFramework.Unity.Persistence.dll</HintPath>
  </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
